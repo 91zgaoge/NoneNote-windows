@@ -89,9 +89,17 @@ body {
 }
 
 .brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   font-weight: 600;
   font-size: 17px;
   letter-spacing: -0.02em;
+}
+
+.brand img {
+  display: block;
+  flex-shrink: 0;
 }
 
 .segmented {

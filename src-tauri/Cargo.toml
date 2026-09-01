@@ -1,6 +1,6 @@
 [package]
 name = "nonenote-windows"
-version = "1.3.0"
+version = "1.3.1"
 description = "NoneNote for Windows — Paper Desk shell"
 authors = ["NoneNote"]
 edition = "2021"

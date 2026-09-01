@@ -27,7 +27,7 @@ Fonts (OFL) live in `public/fonts/`.
 ```sh
 npm install --proxy=null   # if a dead local proxy breaks npm
 npm run dev                # → http://localhost:1420
-npm run build
+npm run build              # → dist/ + build/NoneNote-<version>-web/
 ```
 
 ## Dev (Tauri 2)

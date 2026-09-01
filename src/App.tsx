@@ -26,7 +26,10 @@ export function App() {
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <div className="brand">NoneNote</div>
+        <div className="brand">
+          <img src="/logo.png" alt="" width={28} height={28} />
+          NoneNote
+        </div>
         <div className="segmented" role="tablist">
           {(
             [
