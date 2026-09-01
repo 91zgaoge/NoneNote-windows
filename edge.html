@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NoneNote Edge</title>
+    <link rel="stylesheet" href="/src/styles/paper-desk.css" />
+    <style>
+      html, body {
+        margin: 0;
+        background: transparent;
+        overflow: hidden;
+      }
+      .edge-pill {
+        width: 44px;
+        height: 480px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        background: rgba(28, 28, 32, 0.94);
+        border-radius: 0 6px 6px 0;
+        box-shadow: -2px 0 12px rgba(0, 0, 0, 0.22);
+      }
+      .edge-dash {
+        width: 4px;
+        height: 28px;
+        border-radius: 2px;
+        opacity: 0.9;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="edge-pill" aria-label="NoneNote edge deck stub">
+      <span class="edge-dash" style="background: #E0AD08"></span>
+      <span class="edge-dash" style="background: #2280D6"></span>
+      <span class="edge-dash" style="background: #0E9B6E"></span>
+      <span class="edge-dash" style="background: #B54A3C"></span>
+    </div>
+  </body>
+</html>

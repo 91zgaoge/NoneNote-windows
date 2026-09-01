@@ -1,0 +1,220 @@
+/*!
+ * Paper Desk design tokens — keep in sync with:
+ * - Android: com.noty.android.ui.theme.PaperDesk
+ * - macOS: Sources/PaperDesk.swift
+ * Design: NoneNote/docs/plans/2026-09-01-ui-redesign-design.md
+ */
+
+@font-face {
+  font-family: "Fraunces";
+  src: url("/fonts/fraunces.ttf") format("truetype");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  src: url("/fonts/plus_jakarta_sans.ttf") format("truetype");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("/fonts/ibm_plex_mono.ttf") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}
+
+:root {
+  --desk: #f3eee4;
+  --desk-elevated: #faf7f1;
+  --ink-primary: #2a2418;
+  --ink-secondary: #6b6254;
+  --rule: rgba(42, 36, 24, 0.08);
+  --accent: #a37b3c;
+  --accent-on: #faf7f1;
+  --danger: #b54a3c;
+  --radius-row: 12px;
+  --radius-group: 16px;
+  --radius-button: 10px;
+  --font-ui: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-note: "Fraunces", "Iowan Old Style", serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --desk: #1a1814;
+    --desk-elevated: #242018;
+    --ink-primary: #f0ead8;
+    --ink-secondary: #a89f8e;
+    --rule: rgba(240, 234, 216, 0.09);
+    --accent: #c49a5c;
+    --accent-on: #1a1814;
+    --danger: #e07a6c;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--font-ui);
+  background: var(--desk);
+  color: var(--ink-primary);
+}
+
+.app-shell {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  height: 100%;
+}
+
+.sidebar {
+  background: var(--desk-elevated);
+  border-right: 1px solid var(--rule);
+  display: flex;
+  flex-direction: column;
+  padding: 20px 14px;
+  gap: 12px;
+}
+
+.brand {
+  font-weight: 600;
+  font-size: 17px;
+  letter-spacing: -0.02em;
+}
+
+.segmented {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  border-radius: 12px;
+  background: var(--desk);
+}
+
+.segmented button {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  color: var(--ink-secondary);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 8px 4px;
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+.segmented button[aria-selected="true"] {
+  background: var(--accent);
+  color: var(--accent-on);
+  font-weight: 600;
+}
+
+.search {
+  border: 1px solid var(--rule);
+  background: var(--desk);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font: inherit;
+  color: var(--ink-primary);
+  width: 100%;
+}
+
+.note-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  flex: 1;
+}
+
+.note-row {
+  display: grid;
+  grid-template-columns: 4px 1fr;
+  gap: 12px;
+  padding: 12px 8px;
+  border-bottom: 1px solid var(--rule);
+  cursor: pointer;
+}
+
+.note-row .dash {
+  border-radius: 2px;
+  background: var(--dash, #e0ad08);
+}
+
+.note-row .title {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.note-row .meta {
+  color: var(--ink-secondary);
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.main {
+  padding: 28px 32px;
+  overflow: auto;
+}
+
+.paper {
+  background: linear-gradient(180deg, #fce795, #f7df7a);
+  color: #3a3008;
+  border-radius: 14px;
+  padding: 20px 22px 20px 18px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
+  font-family: var(--font-note);
+  min-height: 280px;
+  border-left: 5px solid #e0ad08;
+}
+
+.paper h1 {
+  margin: 0 0 12px;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.paper p {
+  margin: 0;
+  line-height: 1.55;
+  font-size: 15px;
+}
+
+.empty {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--ink-secondary);
+}
+
+.empty h2 {
+  color: var(--ink-primary);
+  font-size: 17px;
+  margin: 0 0 8px;
+}
+
+.settings-group {
+  background: var(--desk-elevated);
+  border-radius: var(--radius-group);
+  padding: 14px 16px;
+  margin-top: 12px;
+}
+
+.settings-group h3 {
+  margin: 0 0 10px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-secondary);
+}
