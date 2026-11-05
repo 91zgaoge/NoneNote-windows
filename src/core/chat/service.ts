@@ -5,6 +5,13 @@ import { AiClient } from "../ai/client.ts";
 import type { LlmClient } from "../ai/client.ts";
 import { uuid } from "../text.ts";
 import { renderContext, retrieve } from "./retrieval.ts";
+import {
+  executeAgentAction,
+  parseAgentActions,
+  resolveAgentActions,
+  type NoteActionExecutor,
+} from "./actions.ts";
+import type { AgentAction } from "./types.ts";
 import type { RetrievalOptions } from "./retrieval.ts";
 import type { ChatSession } from "./types.ts";
 
@@ -20,7 +27,15 @@ const SYSTEM =
   "wiki pages and notes. Prefer synthesis over quoting. If the material does not contain the " +
   "answer, say clearly that you could not find it in their notes; never invent facts. " +
   "Reply in the language of the question. Keep answers concise and reference pages or note " +
-  "titles when you use them.";
+  "titles when you use them. " +
+  "When the user explicitly asks you to change their notes, append exactly one ```noty " +
+  "fenced JSON block (a single object or an array) after the prose. Supported actions: " +
+  '{"action":"create","title":"...","body":"..."}, ' +
+  '{"action":"append","title":"...","text":"..."}, ' +
+  '{"action":"color","title":"...","color":"Sky"} (Lemon, Peach, Rose, Lilac, Sky, Mint, ' +
+  'Sand, Slate), {"action":"archive","title":"..."}, {"action":"delete","title":"..."}. ' +
+  "Use an exact existing note title (or id from the material); never invent one. Do not " +
+  "add a fence unless the user asked for a change.";
 
 const HARD_SYSTEM_CHARS = 8_000;
 const HARD_USER_CHARS = 32_000;
@@ -35,6 +50,7 @@ export interface ChatDeps {
   clientFactory?: (p: AiProfile) => LlmClient;
   now?: () => number;
   retrieval?: Partial<RetrievalOptions>;
+  actions?: NoteActionExecutor;
 }
 
 /**
@@ -105,6 +121,23 @@ export class ChatService {
     const answer = await client.chat(SYSTEM.slice(0, HARD_SYSTEM_CHARS), user, MAX_ANSWER_TOKENS);
     if (!answer.trim()) throw new Error("empty answer from the model");
 
+    const notes = this.deps.notes();
+    const parsed = this.deps.actions
+      ? parseAgentActions(answer)
+      : { actions: [], cleanedText: answer };
+    const finalActions: AgentAction[] = [];
+    if (this.deps.actions && parsed.actions.length > 0) {
+      const resolved = resolveAgentActions(parsed.actions, notes);
+      for (const action of resolved) {
+        // Archive/delete wait for the confirmation gate; the rest run now.
+        if (action.status === "failed" || action.kind === "archive" || action.kind === "delete") {
+          finalActions.push(action);
+        } else {
+          finalActions.push(executeAgentAction(action, notes, this.deps.actions));
+        }
+      }
+    }
+
     const sources = [...new Set(chunks.map((c) => c.name))].slice(0, 8);
     return {
       ...working,
@@ -112,12 +145,25 @@ export class ChatService {
         ...working.messages,
         {
           role: "assistant",
-          content: answer.trim(),
+          content: parsed.cleanedText.trim(),
           at: now(),
           ...(sources.length > 0 ? { sources } : {}),
+          ...(finalActions.length > 0 ? { actions: finalActions } : {}),
         },
       ],
       updatedAt: now(),
     };
+  }
+
+  /** Confirmation gate for a pending archive/delete action. */
+  async confirmAction(action: AgentAction): Promise<AgentAction> {
+    const executor = this.deps.actions;
+    if (!executor) {
+      return { ...action, status: "failed", fail: "execution_failed" };
+    }
+    const notes = this.deps.notes();
+    const resolved = resolveAgentActions([action], notes)[0];
+    if (resolved.status === "failed") return resolved;
+    return executeAgentAction(resolved, notes, executor);
   }
 }

@@ -13,12 +13,13 @@ class RecordingLlm implements LlmClient {
   system = "";
   user = "";
   calls = 0;
+  answer = "  Answer from notes. ";
 
   async chat(system: string, user: string): Promise<string> {
     this.calls++;
     this.system = system;
     this.user = user;
-    return "  Answer from notes. ";
+    return this.answer;
   }
   async chatWithUsage(system: string, user: string): Promise<[string, LlmUsage]> {
     return [await this.chat(system, user), USAGE];
@@ -93,6 +94,57 @@ test("follow-up questions include recent conversation before the question", asyn
   assert.match(llm.user, /User: what is launch\?/);
   assert.ok(llm.user.trimEnd().endsWith("Question: and async?"));
   assert.equal(second.messages.length, 4);
+});
+
+test("chat auto-runs create/append/color and gates archive/delete", async () => {
+  const llm = new RecordingLlm();
+  llm.answer =
+    "Done.\n```noty\n" +
+    '[{"action":"create","title":"New","body":"body"},' +
+    '{"action":"archive","title":"Coroutine notes"}]\n```\n';
+  const calls: string[] = [];
+  const executor = {
+    create(body: string, title?: string) {
+      calls.push(`create:${title}:${body}`);
+      return {
+        id: "n9",
+        title: title ?? "",
+        body,
+        color: 0,
+        created: 1,
+        modified: 1,
+        archived: false,
+        pinned: false,
+        order: 0,
+      };
+    },
+    append() {
+      calls.push("append");
+    },
+    setColor() {
+      calls.push("color");
+    },
+    archive(id: string, archived: boolean) {
+      calls.push(`archive:${id}:${archived}`);
+    },
+    remove() {
+      calls.push("remove");
+    },
+  };
+  const service = new ChatService({ ...deps(llm), actions: executor });
+  const result = await service.send(emptySession, "create New and archive Coroutine notes");
+  assert.equal(result.messages[1].content, "Done.");
+  const actions = result.messages[1].actions!;
+  assert.equal(actions.length, 2);
+  assert.equal(actions[0].kind, "create");
+  assert.equal(actions[0].status, "done");
+  assert.equal(actions[1].kind, "archive");
+  assert.equal(actions[1].status, "pending");
+  assert.equal(actions[1].targetId, "n1");
+
+  const confirmed = await service.confirmAction(actions[1]);
+  assert.equal(confirmed.status, "done");
+  assert.ok(calls.includes("archive:n1:true"));
 });
 
 test("unconfigured chat throws a typed error without calling the model", async () => {

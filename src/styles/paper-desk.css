@@ -766,3 +766,30 @@ button {
   font-size: 11px;
   padding: 8px 2px;
 }
+
+.agent-action {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  background: rgba(163, 123, 60, 0.1);
+  border: 1px solid rgba(163, 123, 60, 0.25);
+  font-size: 12px;
+}
+
+.agent-action.done {
+  border-color: rgba(14, 155, 110, 0.35);
+  background: rgba(14, 155, 110, 0.08);
+}
+
+.agent-action.failed {
+  border-color: rgba(181, 74, 60, 0.35);
+  background: rgba(181, 74, 60, 0.08);
+}
+
+.agent-action.cancelled {
+  opacity: 0.6;
+}
+
+.agent-action-text {
+  margin-bottom: 4px;
+}

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { AppModel } from "../appModel.ts";
-import type { ChatSession } from "../core/chat/types.ts";
+import type { AgentAction, ChatSession } from "../core/chat/types.ts";
 import { uuid } from "../core/text.ts";
 import { activeProfile } from "../core/types.ts";
 import { t, type Lang } from "../i18n.ts";
@@ -83,6 +83,62 @@ export function ChatPanel({ model, lang }: Props) {
     setNotice(null);
   }
 
+  async function confirmAction(
+    sessionId: string,
+    messageIndex: number,
+    actionIndex: number,
+    action: AgentAction,
+  ) {
+    const updated = await model.chatService.confirmAction(action);
+    updateAction(sessionId, messageIndex, actionIndex, updated);
+  }
+
+  function updateAction(
+    sessionId: string,
+    messageIndex: number,
+    actionIndex: number,
+    action: AgentAction,
+  ) {
+    setSessions((prev) => {
+      const next = prev.map((s) =>
+        s.id !== sessionId
+          ? s
+          : {
+              ...s,
+              messages: s.messages.map((m, mi) =>
+                mi !== messageIndex
+                  ? m
+                  : {
+                      ...m,
+                      actions: (m.actions ?? []).map((a, ai) =>
+                        ai === actionIndex ? action : a,
+                      ),
+                    },
+              ),
+            },
+      );
+      void model.chatStore.save(next);
+      return next;
+    });
+  }
+
+  function actionLabel(action: AgentAction): string {
+    const title = action.targetTitle || action.title || "";
+    if (action.status === "cancelled") return t(lang, "chat.action.cancelled");
+    if (action.status === "failed") {
+      return t(lang, `chat.action.fail.${action.fail ?? "execution_failed"}`);
+    }
+    if (action.status === "pending") {
+      return action.kind === "delete"
+        ? t(lang, "chat.action.pendingDelete", { title })
+        : t(lang, "chat.action.pendingArchive", { title });
+    }
+    return t(lang, `chat.action.done.${action.kind}`, {
+      title,
+      color: action.colorName ?? "",
+    });
+  }
+
   function deleteChat(id: string) {
     if (!window.confirm(t(lang, "chat.delete"))) return;
     const next = sessions.filter((s) => s.id !== id);
@@ -144,7 +200,37 @@ export function ChatPanel({ model, lang }: Props) {
           ) : (
             active.messages.map((m, i) => (
               <div key={i} className={`msg ${m.role}`}>
-                <div className="msg-content">{m.content}</div>
+                {m.content && <div className="msg-content">{m.content}</div>}
+                {m.actions?.map((a, ai) => (
+                  <div key={ai} className={`agent-action ${a.status}`}>
+                    <div className="agent-action-text">{actionLabel(a)}</div>
+                    {a.status === "pending" && (
+                      <div className="row">
+                        <button
+                          type="button"
+                          className="chip"
+                          onClick={() =>
+                            void confirmAction(active.id, i, ai, a)
+                          }
+                        >
+                          {t(lang, "chat.action.confirm")}
+                        </button>
+                        <button
+                          type="button"
+                          className="chip"
+                          onClick={() =>
+                            updateAction(active.id, i, ai, {
+                              ...a,
+                              status: "cancelled",
+                            })
+                          }
+                        >
+                          {t(lang, "chat.action.cancel")}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
                 {m.sources && m.sources.length > 0 && (
                   <div className="msg-sources">
                     {t(lang, "chat.sources")}: {m.sources.join(" · ")}

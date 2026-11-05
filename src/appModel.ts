@@ -41,6 +41,16 @@ async function init(): Promise<AppModel> {
     pages: () => wikiStore.loadPages(),
     settings: () => settingsStore.get(),
     transport: httpTransport,
+    actions: {
+      create: (body, title) => noteStore.create(body, undefined, title),
+      append: (id, text) => {
+        const note = noteStore.note(id);
+        if (note) noteStore.updateBody(id, (note.body + "\n" + text).trim());
+      },
+      setColor: (id, color) => noteStore.setColor(id, color),
+      archive: (id, archived) => noteStore.setArchived(id, archived),
+      remove: (id) => noteStore.delete(id),
+    },
   });
   const wikiService = new WikiCompileService({
     notes: () => noteStore.all(),

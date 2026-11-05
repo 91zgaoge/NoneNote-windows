@@ -1,5 +1,28 @@
 # Changelog
 
+## 1.7.0 (2026-11-05) — note actions in chat, Android palette
+
+- **Agent actions**: the Ask tab now understands the shared ```noty fenced
+  JSON protocol. `create`, `append` and `color` execute immediately;
+  `archive` and `delete` wait for an explicit Confirm/Cancel card. Resolution
+  is by id or exact title, rejects duplicate titles, and reports failures
+  (not found / ambiguous / missing text / bad colour) inline.
+- **Prompt**: the stable system prompt lists only the actions Windows can
+  perform — due-date, calendar-event and Excalidraw diagram actions remain
+  Android-only.
+- **Palette parity**: `NOTE_COLORS` / papers / inks now follow Android's
+  NoteColor order (Lemon, Peach, Rose, Lilac, Sky, Mint, Sand, Slate), so a
+  synced `color` index renders the same colour on both platforms.
+- Chat messages carrying actions persist with the session and in backups.
+
+### Verification
+
+- `npm test`: **60 tests, 0 failures** (action parsing/stripping, resolution,
+  execution seam, chat auto-run + confirmation gate, palette order).
+- `npm run build`: **success** (`NoneNote-1.7.0-web`).
+- **未验证**: real model emitting ```noty fences; destructive actions on live
+  synced data.
+
 ## 1.6.0 (2026-11-05) — Ask your notes (grounded chat)
 
 - **New Ask tab**: a second-brain chat grounded in the compiled wiki and raw

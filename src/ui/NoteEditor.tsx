@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Note } from "../core/types.ts";
 import { t, type Lang } from "../i18n.ts";
-import { NOTE_COLORS } from "../core/palette.ts";
+import { NOTE_COLORS, NOTE_INKS, NOTE_PAPERS } from "../core/palette.ts";
 
 interface Props {
   note: Note;
@@ -36,7 +36,14 @@ export function NoteEditor(props: Props) {
   }, [title, body, note.id, note.title, note.body]);
 
   return (
-    <article className="paper" style={{ borderLeftColor: NOTE_COLORS[note.color % NOTE_COLORS.length] }}>
+    <article
+      className="paper"
+      style={{
+        borderLeftColor: NOTE_COLORS[note.color % NOTE_COLORS.length],
+        background: NOTE_PAPERS[note.color % NOTE_PAPERS.length],
+        color: NOTE_INKS[note.color % NOTE_INKS.length],
+      }}
+    >
       <div className="paper-toolbar">
         <button type="button" className="chip" onClick={() => props.onPin(note.id)}>
           {note.pinned ? t(lang, "editor.unpin") : t(lang, "editor.pin")}
