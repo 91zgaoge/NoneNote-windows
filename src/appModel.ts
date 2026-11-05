@@ -17,6 +17,7 @@ import { formatProfile, synthesizeProfile } from "./core/memory/profile.ts";
 import { AiClient } from "./core/ai/client.ts";
 import { activeProfile } from "./core/types.ts";
 import { sha256Sync } from "./core/wiki/text.ts";
+import { buildIcs } from "./core/event.ts";
 import { blobs } from "./platform/blobStore.ts";
 
 export interface AppModel {
@@ -92,6 +93,16 @@ async function init(): Promise<AppModel> {
       setDue: (id, date) => {
         const map = { ...settingsStore.get().noteDueOns, [id]: date };
         void settingsStore.update({ noteDueOns: map });
+      },
+      addEvent: (title, date, time) => {
+        const ics = buildIcs(title, date, time);
+        const blob = new Blob([ics], { type: "text/calendar" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `NoneNote-${date}.ics`;
+        link.click();
+        URL.revokeObjectURL(url);
       },
       archive: (id, archived) => noteStore.setArchived(id, archived),
       remove: (id) => noteStore.delete(id),

@@ -64,6 +64,26 @@ test("resolves targets by id or exact title and rejects ambiguity", () => {
   assert.equal(badColor.fail, "bad_color");
 });
 
+test("calendar events need a title, date and optional valid time", () => {
+  const parsed = parseAgentActions(
+    '```noty\n{"action":"event","title":"Dentist","date":"2026-12-01","time":"09:30"}\n```',
+  );
+  assert.equal(parsed.actions[0].kind, "event");
+  assert.equal(parsed.actions[0].dueOn, "2026-12-01");
+  assert.equal(parsed.actions[0].time, "09:30");
+  const [ok, badDate, badTime] = resolveAgentActions(
+    [
+      { kind: "event", title: "Dentist", dueOn: "2026-12-01", time: "09:30", status: "pending" },
+      { kind: "event", title: "Dentist", dueOn: "soon", status: "pending" },
+      { kind: "event", title: "Dentist", dueOn: "2026-12-01", time: "25:00", status: "pending" },
+    ],
+    [],
+  );
+  assert.equal(ok.status, "pending");
+  assert.equal(badDate.fail, "bad_date");
+  assert.equal(badTime.fail, "bad_time");
+});
+
 test("due actions need an ISO date", () => {
   const [ok, bad] = resolveAgentActions(
     [
@@ -93,6 +113,9 @@ test("executes create/append/color/due/archive/delete through the seam", () => {
     },
     setDue(id, date) {
       calls.push(`due:${id}:${date}`);
+    },
+    addEvent(title, date, time) {
+      calls.push(`event:${title}:${date}:${time ?? ""}`);
     },
     archive(id, archived) {
       calls.push(`archive:${id}:${archived}`);

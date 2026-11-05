@@ -134,7 +134,12 @@ export class ChatService {
       const resolved = resolveAgentActions(parsed.actions, notes);
       for (const action of resolved) {
         // Archive/delete wait for the confirmation gate; the rest run now.
-        if (action.status === "failed" || action.kind === "archive" || action.kind === "delete") {
+        if (
+          action.status === "failed" ||
+          action.kind === "archive" ||
+          action.kind === "delete" ||
+          action.kind === "event"
+        ) {
           finalActions.push(action);
         } else {
           finalActions.push(executeAgentAction(action, notes, this.deps.actions));

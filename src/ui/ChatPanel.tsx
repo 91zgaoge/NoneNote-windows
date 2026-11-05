@@ -129,9 +129,15 @@ export function ChatPanel({ model, lang }: Props) {
       return t(lang, `chat.action.fail.${action.fail ?? "execution_failed"}`);
     }
     if (action.status === "pending") {
-      return action.kind === "delete"
-        ? t(lang, "chat.action.pendingDelete", { title })
-        : t(lang, "chat.action.pendingArchive", { title });
+      if (action.kind === "delete") return t(lang, "chat.action.pendingDelete", { title });
+      if (action.kind === "event") {
+        return t(lang, "chat.action.pendingEvent", {
+          title,
+          date: action.dueOn ?? "",
+          time: action.time ?? "",
+        });
+      }
+      return t(lang, "chat.action.pendingArchive", { title });
     }
     return t(lang, `chat.action.done.${action.kind}`, {
       title,

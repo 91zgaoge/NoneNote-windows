@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.12.0 (2026-11-05) — calendar-event action
+
+- **`event` action**: the `noty` protocol accepts
+  `{"action":"event","title":"...","date":"yyyy-MM-dd","time":"HH:mm"}`.
+  Time is optional; timed events are one hour long, date-only events are
+  all-day. Invalid dates/times fail inline (`bad_date` / `bad_time`).
+- **Confirmation gate**: like archive/delete, the event card asks Confirm /
+  Cancel before anything is created.
+- **Windows handoff**: confirmation builds an RFC 5545 `.ics` and downloads
+  `NoneNote-<date>.ics` for the system calendar app (Android opens the
+  calendar insert UI directly). Excalidraw diagrams remain Android-only.
+- **Prompt**: the stable system prompt lists `event` among supported actions.
+
+### Verification
+
+- `npm test`: **89 tests, 0 failures** (ICS timed/all-day/escaping/validation,
+  event parse/resolve, confirmation-gated execution).
+- `npm run build`: **success** (`NoneNote-1.12.0-web`).
+- `cd src-tauri && cargo check`: **success**.
+- **未验证**: `.ics` download inside WebView2 and import by Windows Calendar;
+  Excalidraw diagram action remains unimplemented.
+
 ## 1.11.0 (2026-11-05) — due dates and the due agent action
 
 - **Local due dates**: `noteDueOns` in settings (note id → yyyy-MM-dd), a date

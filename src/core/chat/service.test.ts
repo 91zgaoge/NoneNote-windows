@@ -127,6 +127,9 @@ test("chat auto-runs create/append/color and gates archive/delete", async () => 
     setDue() {
       calls.push("due");
     },
+    addEvent(title: string, date: string, time?: string) {
+      calls.push(`event:${title}:${date}:${time ?? ""}`);
+    },
     archive(id: string, archived: boolean) {
       calls.push(`archive:${id}:${archived}`);
     },
@@ -160,6 +163,36 @@ test("the memory profile precedes retrieved material and the question stays last
   assert.ok(llm.user.startsWith("About the user:"));
   assert.match(llm.user, /Structured concurrency/);
   assert.ok(llm.user.trimEnd().endsWith("Question: what do I like?"));
+});
+
+test("calendar events wait for confirmation before creating the ICS", async () => {
+  const llm = new RecordingLlm();
+  llm.answer =
+    "I can add that.\n```noty\n" +
+    '{"action":"event","title":"Dentist","date":"2026-12-01","time":"09:30"}\n```\n';
+  const calls: string[] = [];
+  const executor = {
+    create() {
+      throw new Error("not used");
+    },
+    append() {},
+    setColor() {},
+    setDue() {},
+    addEvent(title: string, date: string, time?: string) {
+      calls.push(`event:${title}:${date}:${time}`);
+    },
+    archive() {},
+    remove() {},
+  };
+  const service = new ChatService({ ...deps(llm), actions: executor });
+  const result = await service.send(emptySession, "add a dentist appointment");
+  const action = result.messages[1].actions![0];
+  assert.equal(action.kind, "event");
+  assert.equal(action.status, "pending");
+  assert.equal(calls.length, 0);
+  const confirmed = await service.confirmAction(action);
+  assert.equal(confirmed.status, "done");
+  assert.deepEqual(calls, ["event:Dentist:2026-12-01:09:30"]);
 });
 
 test("unconfigured chat throws a typed error without calling the model", async () => {

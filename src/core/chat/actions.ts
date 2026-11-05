@@ -1,6 +1,7 @@
 import type { Note } from "../types.ts";
 import { colorIndexByName, NOTE_COLOR_NAMES } from "../palette.ts";
 import { isValidDueDate } from "../due.ts";
+import { isValidEventTime } from "../event.ts";
 import type { AgentAction, AgentActionKind, AgentFailReason } from "./types.ts";
 
 const FENCE_RE = /```noty[ \t]*\r?\n([\s\S]*?)\r?\n?```\r?\n?/gi;
@@ -12,9 +13,18 @@ interface RawAction {
   text?: string;
   color?: number;
   dueOn?: string;
+  time?: string;
 }
 
-const SUPPORTED: AgentActionKind[] = ["create", "append", "color", "archive", "delete", "due"];
+const SUPPORTED: AgentActionKind[] = [
+  "create",
+  "append",
+  "color",
+  "archive",
+  "delete",
+  "due",
+  "event",
+];
 
 export interface ParsedActions {
   actions: AgentAction[];
@@ -51,6 +61,7 @@ export function parseAgentActions(answer: string): ParsedActions {
         color: raw.color,
         colorName: raw.color === undefined ? undefined : NOTE_COLOR_NAMES[raw.color],
         dueOn: raw.dueOn,
+        time: raw.time,
         status: "pending",
       });
     }
@@ -78,7 +89,8 @@ function toRawAction(o: Record<string, unknown>): RawAction | null {
   if (color !== undefined && (color < 0 || color > 7)) color = undefined;
   const dueRaw = o.date ?? o.due ?? o.due_on;
   const dueOn = typeof dueRaw === "string" ? dueRaw.trim() : undefined;
-  return { kind: kind as AgentActionKind, id, title, text, color, dueOn };
+  const time = typeof o.time === "string" ? o.time.trim() : undefined;
+  return { kind: kind as AgentActionKind, id, title, text, color, dueOn, time };
 }
 
 function fail(action: AgentAction, reason: AgentFailReason): AgentAction {
@@ -94,6 +106,12 @@ export function resolveAgentActions(actions: AgentAction[], notes: Note[]): Agen
   return actions.map((action) => {
     if (action.kind === "create") {
       if (!action.title?.trim() && !action.text?.trim()) return fail(action, "missing_text");
+      return { ...action, status: "pending" };
+    }
+    if (action.kind === "event") {
+      if (!action.title?.trim()) return fail(action, "missing_target");
+      if (!isValidDueDate(action.dueOn)) return fail(action, "bad_date");
+      if (action.time && !isValidEventTime(action.time)) return fail(action, "bad_time");
       return { ...action, status: "pending" };
     }
 
@@ -127,6 +145,7 @@ export interface NoteActionExecutor {
   append(id: string, text: string): void;
   setColor(id: string, color: number): void;
   setDue(id: string, date: string): void;
+  addEvent(title: string, date: string, time?: string): void;
   archive(id: string, archived: boolean): void;
   remove(id: string): void;
 }
@@ -168,6 +187,13 @@ export function executeAgentAction(
         const target = notes.find((n) => n.id === action.targetId);
         if (!target || !isValidDueDate(action.dueOn)) return fail(action, "bad_date");
         executor.setDue(target.id, action.dueOn!);
+        return { ...action, status: "done" };
+      }
+      case "event": {
+        if (!action.title?.trim() || !isValidDueDate(action.dueOn)) {
+          return fail(action, "bad_date");
+        }
+        executor.addEvent(action.title, action.dueOn!, action.time);
         return { ...action, status: "done" };
       }
       case "archive": {

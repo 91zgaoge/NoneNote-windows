@@ -5,7 +5,7 @@ Paper Desk note app for Windows. Shares design tokens and the WebDAV
 (`docs/plans/2026-09-01-ui-redesign-design.md`,
 `docs/plans/2026-08-31-multiplatform-sync-design.md` in the Android repo).
 
-## Status (1.11.0)
+## Status (1.12.0)
 
 - **Notes:** local JSON persistence in the Tauri app-data directory, create /
   edit / pin / archive / delete with undo, search, reorder, 8-colour palette.
@@ -30,7 +30,9 @@ Paper Desk note app for Windows. Shares design tokens and the WebDAV
   (Lemon → Slate), so colour indexes mean the same thing on every platform.
 - **Due dates:** set/clear a local due date per note (editor date field),
   overdue/today/future badges in the list, and a `due` agent action. Local-only
-  and not synced, matching Android (reminders are not ported yet).
+  and not synced, matching Android (reminders are not ported yet). The `event`
+  action is confirmation-gated and downloads an RFC 5545 `.ics` (timed or
+  all-day) for the system calendar app.
 - **Memory:** facts about the user are distilled from changed notes and new
   chat lines (static/dynamic, add/updates/extends/derives, optional expiry,
   dedup by normalized hash, version chains). An "About the user" block is
@@ -54,9 +56,9 @@ Paper Desk note app for Windows. Shares design tokens and the WebDAV
 - **Edge deck:** the always-on-top window snaps to the right screen edge, shows
   a dash per recent note, and expands on hover into a card panel; clicking a
   dash or card opens that note in the main window.
-- **Not yet ported:** calendar-event / Excalidraw-diagram agent actions,
-  due-date reminders, full edge-deck fan gestures. Attachment text extraction /
-  AI summaries also remain Android/macOS-only.
+- **Not yet ported:** Excalidraw-diagram agent action, due-date reminders,
+  full edge-deck fan gestures. Attachment text extraction / AI summaries also
+  remain Android/macOS-only.
 - **Verification:** `npm test` and `npm run build` pass on macOS; `cargo check`
   passes; notes/wiki/settings screenshots were checked in Chrome (web mode).
   **未验证** on a Windows host, against a real WebDAV server, or against a real
