@@ -832,3 +832,36 @@ button {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* ---- memory profile ------------------------------------------------------ */
+
+.memory-group {
+  margin-top: 10px;
+}
+
+.memory-group.inferred {
+  border-top: 1px solid var(--rule);
+  padding-top: 8px;
+}
+
+.memory-label {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-secondary);
+  margin-bottom: 4px;
+}
+
+.memory-fact {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: space-between;
+  font-size: 13px;
+  padding: 4px 2px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.memory-fact > span:first-child {
+  flex: 1;
+}

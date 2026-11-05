@@ -7,6 +7,7 @@ import { httpTransport } from "../platform/httpTransport.ts";
 import { makeBackup, parseBackup } from "../core/backup.ts";
 import { uuid } from "../core/text.ts";
 import { t, type Lang } from "../i18n.ts";
+import { MemorySection } from "./MemorySection.tsx";
 
 interface Props {
   model: AppModel;
@@ -340,6 +341,8 @@ export function SettingsPanel({ model, lang }: Props) {
         )}
         <p className="muted">{t(lang, "settings.autoCompileHint")}</p>
       </section>
+
+      <MemorySection model={model} lang={lang} />
 
       <section className="settings-group">
         <h3>{t(lang, "settings.backup")}</h3>

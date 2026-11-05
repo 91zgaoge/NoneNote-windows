@@ -1,5 +1,34 @@
 # Changelog
 
+## 1.9.0 (2026-11-05) — memory layer ("About the user")
+
+- **Fact store**: local-only, versioned facts with static/dynamic kinds,
+  add/updates/extends/derives relations, corroboration counts, optional
+  `forgetAfter` expiry, and soft forget/approve/decline.
+- **Dreamer**: incremental extraction from changed notes and new chat lines
+  (content-hash + chat-id state). Catalog capped at 4k chars, notes +
+  conversation at 12k; invalid model output persists nothing and retries.
+- **Dedup/versioning**: normalized SHA-256 hash dedup increments
+  corroboration; `updates` supersedes the old head; `extends` links to the
+  root; `derives` is stored as inference.
+- **Profile injection**: "About the user" block (12 static by corroboration,
+  8 dynamic from the last 14 days with date prefix, 2 question-relevant
+  inferences) is placed before retrieved material in every ask; the question
+  stays at the tail.
+- **UI**: Settings → My profile lists long-term/recent facts, Forget,
+  inferred review (Accept/Discard), and Learn now with localized summaries.
+  A successful wiki compile triggers a best-effort dream.
+- **Scope**: local-only (never synced or backed up), matching Android.
+
+### Verification
+
+- `npm test`: **80 tests, 0 failures** (hash/plan/expiry, profile caps and
+  freshness, store sweep/forget/approve/prune, incremental dreamer with
+  supersede and parse-failure retry, chat memory injection).
+- `npm run build`: **success** (`NoneNote-1.9.0-web`).
+- Settings profile section checked via Chrome screenshot.
+- **未验证**: real model extraction quality; dream runs on a multi-note corpus.
+
 ## 1.8.0 (2026-11-05) — attachments over WebDAV
 
 - **Attachment library**: add files to a note, see image thumbnails, download

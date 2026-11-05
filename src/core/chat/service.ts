@@ -51,6 +51,7 @@ export interface ChatDeps {
   now?: () => number;
   retrieval?: Partial<RetrievalOptions>;
   actions?: NoteActionExecutor;
+  memoryBlock?: (question: string) => string | Promise<string>;
 }
 
 /**
@@ -100,12 +101,14 @@ export class ChatService {
       .join("\n");
     const chunks = retrieve(recentQuestions || question, pages, this.deps.notes(), this.deps.retrieval);
     const context = chunks.length > 0 ? renderContext(chunks) : "";
+    const memory = (await this.deps.memoryBlock?.(question)) ?? "";
     const history = priorMessages
       .slice(-HISTORY_MESSAGES)
       .map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`)
       .join("\n");
 
-    let user = context;
+    let user = memory ? memory + "\n\n" : "";
+    user += context;
     if (history) user += `\nConversation so far:\n${history}\n`;
     user += `\nQuestion: ${question}`;
     if (user.length > HARD_USER_CHARS) {

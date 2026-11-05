@@ -147,6 +147,18 @@ test("chat auto-runs create/append/color and gates archive/delete", async () => 
   assert.ok(calls.includes("archive:n1:true"));
 });
 
+test("the memory profile precedes retrieved material and the question stays last", async () => {
+  const llm = new RecordingLlm();
+  const service = new ChatService({
+    ...deps(llm),
+    memoryBlock: () => "About the user:\n- Likes tea",
+  });
+  await service.send(emptySession, "what do I like?");
+  assert.ok(llm.user.startsWith("About the user:"));
+  assert.match(llm.user, /Structured concurrency/);
+  assert.ok(llm.user.trimEnd().endsWith("Question: what do I like?"));
+});
+
 test("unconfigured chat throws a typed error without calling the model", async () => {
   let called = false;
   const service = new ChatService({

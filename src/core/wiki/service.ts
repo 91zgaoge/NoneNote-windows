@@ -30,6 +30,8 @@ export interface WikiCompileDeps {
   transport: HttpTransport;
   attachments?: () => Promise<Attachment[]>;
   clientFactory?: (profile: AiProfile) => LlmClient;
+  /** Best-effort follow-up after a successful compile (e.g. memory dream). */
+  onCompileDone?: () => void | Promise<void>;
 }
 
 export interface CompileOptions {
@@ -137,6 +139,9 @@ export class WikiCompileService {
       const summary = await run;
       this.lastSummary = summary;
       for (const fn of this.summaryListeners) fn(summary);
+      if (this.deps.onCompileDone) {
+        void Promise.resolve(this.deps.onCompileDone()).catch(() => undefined);
+      }
       return summary;
     } catch (e) {
       const error = e instanceof Error ? e : new Error(String(e));
