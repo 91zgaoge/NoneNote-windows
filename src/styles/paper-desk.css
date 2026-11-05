@@ -226,3 +226,381 @@ body {
   text-transform: uppercase;
   color: var(--ink-secondary);
 }
+
+/* ---- interactive shell -------------------------------------------------- */
+
+button {
+  font: inherit;
+}
+
+.button {
+  border: 1px solid var(--rule);
+  background: var(--desk);
+  color: var(--ink-primary);
+  border-radius: var(--radius-button);
+  padding: 8px 14px;
+  cursor: pointer;
+}
+
+.button:hover {
+  border-color: var(--accent);
+}
+
+.button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-on);
+  font-weight: 600;
+}
+
+.button.danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+
+.button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.chip {
+  border: 1px solid var(--rule);
+  background: transparent;
+  color: var(--ink-secondary);
+  border-radius: 8px;
+  padding: 4px 9px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.chip:hover {
+  color: var(--ink-primary);
+  border-color: var(--accent);
+}
+
+.chip.danger:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.muted {
+  color: var(--ink-secondary);
+  font-size: 12px;
+}
+
+.note-row {
+  width: 100%;
+  text-align: left;
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  background: transparent;
+  color: inherit;
+}
+
+.note-row.active {
+  background: var(--desk);
+}
+
+.note-row .dash {
+  align-self: stretch;
+  border-radius: 2px;
+  background: var(--dash, #e0ad08);
+}
+
+.sync-footer {
+  border-top: 1px solid var(--rule);
+  padding-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.sync-footer .muted {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- note editor --------------------------------------------------------- */
+
+.paper {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 80px);
+}
+
+.paper-toolbar {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.paper-toolbar .chip {
+  background: rgba(58, 48, 8, 0.08);
+  border-color: rgba(58, 48, 8, 0.16);
+  color: #5a4a10;
+}
+
+.paper-toolbar .chip.danger {
+  color: #8c2f24;
+}
+
+.paper-title {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-family: var(--font-note);
+  font-size: 24px;
+  font-weight: 600;
+  color: inherit;
+  outline: none;
+  padding: 0;
+  margin-bottom: 10px;
+}
+
+.paper-body {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-family: var(--font-note);
+  font-size: 15px;
+  line-height: 1.6;
+  color: inherit;
+  outline: none;
+  resize: vertical;
+  flex: 1;
+  min-height: 320px;
+  padding: 0;
+}
+
+.palette {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+}
+
+.swatch.active {
+  border-color: rgba(0, 0, 0, 0.45);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5) inset;
+}
+
+/* ---- toast --------------------------------------------------------------- */
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  background: var(--ink-primary);
+  color: var(--desk-elevated);
+  border-radius: 12px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+  z-index: 20;
+}
+
+.toast .chip {
+  color: var(--desk-elevated);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+/* ---- wiki ---------------------------------------------------------------- */
+
+.wiki-shell,
+.settings-shell {
+  max-width: 1080px;
+}
+
+.wiki-header,
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+
+.wiki-header h2,
+.settings-header h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.wiki-header p {
+  margin: 4px 0 0;
+}
+
+.banner {
+  background: var(--desk-elevated);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--accent);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin: 10px 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.banner.ok {
+  border-left-color: #0e9b6e;
+}
+
+.trace {
+  background: var(--desk-elevated);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin: 8px 0;
+  max-height: 170px;
+  overflow: auto;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.trace-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 2px 0;
+  color: var(--ink-secondary);
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--rule);
+  flex-shrink: 0;
+}
+
+.dot.start {
+  background: var(--accent);
+}
+
+.dot.done {
+  background: #0e9b6e;
+}
+
+.wiki-columns {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 18px;
+  margin-top: 12px;
+  align-items: start;
+}
+
+.wiki-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: calc(100vh - 220px);
+  overflow: auto;
+}
+
+.wiki-row {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  cursor: pointer;
+}
+
+.wiki-row .title {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.wiki-row.active {
+  background: var(--desk-elevated);
+  border-radius: 8px;
+}
+
+.wiki-page {
+  background: var(--desk-elevated);
+  border-radius: var(--radius-group);
+  padding: 22px 24px;
+  min-height: 320px;
+}
+
+.wiki-page h1 {
+  margin: 0 0 6px;
+  font-family: var(--font-note);
+  font-size: 24px;
+}
+
+.wiki-body {
+  white-space: pre-wrap;
+  line-height: 1.6;
+  font-size: 14px;
+  margin-top: 16px;
+}
+
+.wikilink {
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* ---- settings ------------------------------------------------------------ */
+
+.settings-group label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--ink-secondary);
+  margin-bottom: 10px;
+}
+
+.settings-group input,
+.settings-group select {
+  border: 1px solid var(--rule);
+  background: var(--desk);
+  border-radius: 9px;
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--ink-primary);
+}
+
+.row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.row > label {
+  flex: 1;
+  min-width: 160px;
+}
+
+.settings-group .button {
+  margin-top: 4px;
+}

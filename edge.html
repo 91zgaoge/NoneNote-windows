@@ -28,15 +28,19 @@
         height: 28px;
         border-radius: 2px;
         opacity: 0.9;
+        border: 0;
+        padding: 0;
+        cursor: pointer;
+        transition: width 120ms ease, opacity 120ms ease;
+      }
+      button.edge-dash:hover {
+        width: 7px;
+        opacity: 1;
       }
     </style>
   </head>
   <body>
-    <div class="edge-pill" aria-label="NoneNote edge deck stub">
-      <span class="edge-dash" style="background: #E0AD08"></span>
-      <span class="edge-dash" style="background: #2280D6"></span>
-      <span class="edge-dash" style="background: #0E9B6E"></span>
-      <span class="edge-dash" style="background: #B54A3C"></span>
-    </div>
+    <div id="edge"></div>
+    <script type="module" src="/src/edge.ts"></script>
   </body>
 </html>

@@ -1,6 +1,6 @@
 [package]
 name = "nonenote-windows"
-version = "1.3.1"
+version = "1.4.0"
 description = "NoneNote for Windows — Paper Desk shell"
 authors = ["NoneNote"]
 edition = "2021"
@@ -17,6 +17,8 @@ tauri = { version = "2", features = [] }
 tauri-plugin-shell = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
+base64 = "0.22"
 
 [profile.release]
 panic = "abort"
