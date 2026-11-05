@@ -2,6 +2,8 @@ import type { AppSettings, Note, WikiPage, WikiState } from "../core/types.ts";
 import { emptyWikiState } from "../core/types.ts";
 import { decodeSnapshot, encodeSnapshot } from "../core/sync/codec.ts";
 import type { ChatSession } from "./chat/types.ts";
+import type { Attachment } from "./types.ts";
+import { base64ToBytes, bytesToBase64 } from "./base64.ts";
 
 /**
  * Full backup (settings, notes, wiki) in one JSON file. Mirrors the Android
@@ -18,6 +20,8 @@ export interface BackupFile {
   settings: AppSettings;
   wiki: { pages: WikiPage[]; state: WikiState };
   chat: ChatSession[];
+  /** Decrypted attachment metadata + bytes (base64); null when unavailable. */
+  attachments: { meta: Attachment; dataBase64: string | null }[];
 }
 
 export function makeBackup(
@@ -26,6 +30,7 @@ export function makeBackup(
   pages: WikiPage[],
   state: WikiState,
   chat: ChatSession[] = [],
+  attachments: { meta: Attachment; bytes: Uint8Array | null }[] = [],
 ): BackupFile {
   return {
     app: "NoneNote",
@@ -41,7 +46,17 @@ export function makeBackup(
     settings,
     wiki: { pages, state },
     chat,
+    attachments: attachments.map((a) => ({
+      meta: a.meta,
+      dataBase64: a.bytes ? bytesToBase64(a.bytes) : null,
+    })),
   };
+}
+
+export function decodeAttachmentPayload(entry: {
+  dataBase64: string | null;
+}): Uint8Array | null {
+  return entry.dataBase64 ? base64ToBytes(entry.dataBase64) : null;
 }
 
 export function parseBackup(text: string): {
@@ -50,6 +65,7 @@ export function parseBackup(text: string): {
   pages: WikiPage[];
   state: WikiState;
   chat: ChatSession[];
+  attachments: { meta: Attachment; dataBase64: string | null }[];
 } {
   const parsed = JSON.parse(text) as Partial<BackupFile>;
   if (parsed.app !== "NoneNote" || parsed.format !== "windows-backup") {
@@ -64,5 +80,8 @@ export function parseBackup(text: string): {
     pages: parsed.wiki?.pages ?? [],
     state: parsed.wiki?.state ?? emptyWikiState(),
     chat: Array.isArray(parsed.chat) ? parsed.chat : [],
+    attachments: Array.isArray(parsed.attachments)
+      ? parsed.attachments.filter((a) => a && a.meta && typeof a.meta.id === "string")
+      : [],
   };
 }

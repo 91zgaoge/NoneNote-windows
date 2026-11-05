@@ -12,6 +12,8 @@ interface Props {
   onAttach: (file: File) => void;
   onDownloadAttachment: (a: LocalAttachment) => void;
   onRemoveAttachment: (a: LocalAttachment) => void;
+  dueOn?: string;
+  onDue: (date: string | null) => void;
   onBody: (id: string, body: string) => void;
   onTitle: (id: string, title: string) => void;
   onPin: (id: string) => void;
@@ -72,6 +74,21 @@ export function NoteEditor(props: Props) {
         <button type="button" className="chip danger" onClick={() => props.onDelete(note.id)}>
           {t(lang, "editor.delete")}
         </button>
+      </div>
+      <div className="due-row">
+        <label>
+          {t(lang, "editor.due")}
+          <input
+            type="date"
+            value={props.dueOn ?? ""}
+            onChange={(e) => props.onDue(e.target.value || null)}
+          />
+        </label>
+        {props.dueOn && (
+          <button type="button" className="chip" onClick={() => props.onDue(null)}>
+            {t(lang, "editor.dueClear")}
+          </button>
+        )}
       </div>
       <input
         className="paper-title"

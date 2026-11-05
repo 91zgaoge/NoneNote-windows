@@ -865,3 +865,54 @@ button {
 .memory-fact > span:first-child {
   flex: 1;
 }
+
+/* ---- due dates ----------------------------------------------------------- */
+
+.due-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.55);
+}
+
+.due-row label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.due-row input {
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 7px;
+  padding: 3px 6px;
+  font: inherit;
+  font-size: 11px;
+  color: inherit;
+}
+
+.due-badge {
+  display: inline-block;
+  margin-top: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 5px;
+  padding: 1px 5px;
+}
+
+.due-badge.overdue {
+  background: rgba(181, 74, 60, 0.16);
+  color: #a33a2e;
+}
+
+.due-badge.today {
+  background: rgba(224, 173, 8, 0.24);
+  color: #6b5200;
+}
+
+.due-badge.future {
+  background: rgba(34, 128, 214, 0.14);
+  color: #1c5f9c;
+}

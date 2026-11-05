@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { makeBackup, parseBackup } from "./backup.ts";
+import { decodeAttachmentPayload, makeBackup, parseBackup } from "./backup.ts";
 import { emptySettings } from "./types.ts";
 import type { Note, WikiPage } from "./types.ts";
 import { emptyWikiState } from "./types.ts";
@@ -35,7 +35,23 @@ test("backup round-trips notes, settings and the wiki", () => {
   ];
   const state = { ...emptyWikiState(), noteHashes: { n1: "abc" } };
   const chat = [{ id: "c1", title: "Hi", messages: [], updatedAt: 4 }];
-  const text = JSON.stringify(makeBackup([note], settings, pages, state, chat));
+  const attachment = {
+    id: "att-1",
+    noteId: "n1",
+    kind: "image" as const,
+    mime: "image/png",
+    fileName: "a.png",
+    size: 3,
+    sha256: "abc",
+    extractedText: "",
+    aiSummary: "",
+    parseStatus: "ok",
+  };
+  const text = JSON.stringify(
+    makeBackup([note], settings, pages, state, chat, [
+      { meta: attachment, bytes: new Uint8Array([1, 2, 3]) },
+    ]),
+  );
   assert.ok(text.includes("windows-backup"));
   const back = parseBackup(text);
   assert.equal(back.notes.length, 1);
@@ -45,6 +61,8 @@ test("backup round-trips notes, settings and the wiki", () => {
   assert.equal(back.pages[0].name, "Topic");
   assert.equal(back.state.noteHashes.n1, "abc");
   assert.equal(back.chat[0].id, "c1");
+  assert.equal(back.attachments[0].meta.id, "att-1");
+  assert.deepEqual(decodeAttachmentPayload(back.attachments[0]), new Uint8Array([1, 2, 3]));
 });
 
 test("foreign JSON is rejected", () => {

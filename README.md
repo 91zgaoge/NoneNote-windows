@@ -5,7 +5,7 @@ Paper Desk note app for Windows. Shares design tokens and the WebDAV
 (`docs/plans/2026-09-01-ui-redesign-design.md`,
 `docs/plans/2026-08-31-multiplatform-sync-design.md` in the Android repo).
 
-## Status (1.9.0)
+## Status (1.11.0)
 
 - **Notes:** local JSON persistence in the Tauri app-data directory, create /
   edit / pin / archive / delete with undo, search, reorder, 8-colour palette.
@@ -28,6 +28,9 @@ Paper Desk note app for Windows. Shares design tokens and the WebDAV
   streaming, memory extraction, due-date or calendar/diagram actions yet.
 - **Palette:** note colours now use the Android `NoteColor` order and values
   (Lemon → Slate), so colour indexes mean the same thing on every platform.
+- **Due dates:** set/clear a local due date per note (editor date field),
+  overdue/today/future badges in the list, and a `due` agent action. Local-only
+  and not synced, matching Android (reminders are not ported yet).
 - **Memory:** facts about the user are distilled from changed notes and new
   chat lines (static/dynamic, add/updates/extends/derives, optional expiry,
   dedup by normalized hash, version chains). An "About the user" block is
@@ -43,17 +46,17 @@ Paper Desk note app for Windows. Shares design tokens and the WebDAV
   and AI summaries are not generated here (remote metadata is still used by
   the wiki compiler).
 - **Backup:** one JSON file with notes, settings (including secrets), the
-  compiled wiki and chat sessions; import replaces all four. Attachment
-  payloads are not included yet.
+  compiled wiki, chat sessions and decrypted attachment payloads; import
+  replaces all of them.
 - **i18n:** English + 简体中文 for all user-visible strings.
 - **Scheduled compile:** optional daily wall-clock run (default 08:00) with the
   fixed 60-page background budget; it runs only while NoneNote is open.
 - **Edge deck:** the always-on-top window snaps to the right screen edge, shows
   a dash per recent note, and expands on hover into a card panel; clicking a
   dash or card opens that note in the main window.
-- **Not yet ported:** due-date / calendar / diagram agent actions, full
-  edge-deck fan gestures. Attachment text extraction / AI summaries also
-  remain Android/macOS-only.
+- **Not yet ported:** calendar-event / Excalidraw-diagram agent actions,
+  due-date reminders, full edge-deck fan gestures. Attachment text extraction /
+  AI summaries also remain Android/macOS-only.
 - **Verification:** `npm test` and `npm run build` pass on macOS; `cargo check`
   passes; notes/wiki/settings screenshots were checked in Chrome (web mode).
   **未验证** on a Windows host, against a real WebDAV server, or against a real

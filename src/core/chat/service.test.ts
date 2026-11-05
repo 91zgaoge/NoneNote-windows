@@ -124,6 +124,9 @@ test("chat auto-runs create/append/color and gates archive/delete", async () => 
     setColor() {
       calls.push("color");
     },
+    setDue() {
+      calls.push("due");
+    },
     archive(id: string, archived: boolean) {
       calls.push(`archive:${id}:${archived}`);
     },

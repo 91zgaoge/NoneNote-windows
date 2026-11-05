@@ -1,5 +1,44 @@
 # Changelog
 
+## 1.11.0 (2026-11-05) — due dates and the due agent action
+
+- **Local due dates**: `noteDueOns` in settings (note id → yyyy-MM-dd), a date
+  field + Clear in the editor, and overdue/today/future badges in the note
+  list. Local-only, never synced — same as Android.
+- **Agent action**: the `noty` protocol accepts
+  `{"action":"due","title":"...","date":"yyyy-MM-dd"}`; it validates the date
+  and applies the due date through the same settings map. Calendar-event and
+  Excalidraw-diagram actions remain Android-only.
+- **Prompt**: the stable system prompt now lists `due` among supported actions.
+
+### Verification
+
+- `npm test`: **84 tests, 0 failures** (due-state classification, date
+  validation, action parse/resolve/execute).
+- `npm run build`: **success** (`NoneNote-1.11.0-web`).
+- `cd src-tauri && cargo check`: **success**.
+- **未验证**: due-date reminders/notifications (not ported), Windows host.
+
+## 1.10.0 (2026-11-05) — attachment payloads in backups
+
+- JSON backups now carry every attachment's metadata plus its decrypted
+  bytes (base64), matching Android's "zip with attachments" behavior. A
+  row whose payload is unavailable exports with `dataBase64: null`.
+- Import replaces notes/settings/wiki/chat and clears the local attachment
+  library before restoring metadata + payloads; older backups without the
+  new array still import.
+- This closes the last backup gap; the file is still plain JSON containing
+  the API key, WebDAV password, chat text and note/attachment contents, so
+  the existing export warning applies.
+
+### Verification
+
+- `npm test`: **80 tests, 0 failures** (backup round-trip now asserts the
+  attachment bytes).
+- `npm run build`: **success** (`NoneNote-1.10.0-web`).
+- **未验证**: very large attachment backups (memory use), importing a backup
+  produced by Android's ZIP format (this remains JSON-only).
+
 ## 1.9.0 (2026-11-05) — memory layer ("About the user")
 
 - **Fact store**: local-only, versioned facts with static/dynamic kinds,

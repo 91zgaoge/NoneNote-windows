@@ -77,6 +77,13 @@ export function NotePane({ model, note, lang }: Props) {
     URL.revokeObjectURL(url);
   }
 
+  async function setDue(date: string | null) {
+    const map = { ...model.settingsStore.get().noteDueOns };
+    if (date) map[note.id] = date;
+    else delete map[note.id];
+    await model.settingsStore.update({ noteDueOns: map });
+  }
+
   async function remove(a: LocalAttachment) {
     await model.attachmentStore.remove(a.id);
     model.noteStore.touch(note.id);
@@ -93,6 +100,8 @@ export function NotePane({ model, note, lang }: Props) {
         onAttach={(file) => void attach(file)}
         onDownloadAttachment={(a) => void download(a)}
         onRemoveAttachment={(a) => void remove(a)}
+        dueOn={model.settingsStore.get().noteDueOns[note.id]}
+        onDue={(date) => void setDue(date)}
         onBody={(id, body) => model.noteStore.updateBody(id, body)}
         onTitle={(id, title) => model.noteStore.setTitle(id, title)}
         onPin={(id) => model.noteStore.togglePin(id)}

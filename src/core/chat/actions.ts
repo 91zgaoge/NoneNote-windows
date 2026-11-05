@@ -1,5 +1,6 @@
 import type { Note } from "../types.ts";
 import { colorIndexByName, NOTE_COLOR_NAMES } from "../palette.ts";
+import { isValidDueDate } from "../due.ts";
 import type { AgentAction, AgentActionKind, AgentFailReason } from "./types.ts";
 
 const FENCE_RE = /```noty[ \t]*\r?\n([\s\S]*?)\r?\n?```\r?\n?/gi;
@@ -10,9 +11,10 @@ interface RawAction {
   title?: string;
   text?: string;
   color?: number;
+  dueOn?: string;
 }
 
-const SUPPORTED: AgentActionKind[] = ["create", "append", "color", "archive", "delete"];
+const SUPPORTED: AgentActionKind[] = ["create", "append", "color", "archive", "delete", "due"];
 
 export interface ParsedActions {
   actions: AgentAction[];
@@ -48,6 +50,7 @@ export function parseAgentActions(answer: string): ParsedActions {
         text: raw.text,
         color: raw.color,
         colorName: raw.color === undefined ? undefined : NOTE_COLOR_NAMES[raw.color],
+        dueOn: raw.dueOn,
         status: "pending",
       });
     }
@@ -73,7 +76,9 @@ function toRawAction(o: Record<string, unknown>): RawAction | null {
       : (colorIndexByName(rawColor) ?? undefined);
   }
   if (color !== undefined && (color < 0 || color > 7)) color = undefined;
-  return { kind: kind as AgentActionKind, id, title, text, color };
+  const dueRaw = o.date ?? o.due ?? o.due_on;
+  const dueOn = typeof dueRaw === "string" ? dueRaw.trim() : undefined;
+  return { kind: kind as AgentActionKind, id, title, text, color, dueOn };
 }
 
 function fail(action: AgentAction, reason: AgentFailReason): AgentAction {
@@ -107,6 +112,7 @@ export function resolveAgentActions(actions: AgentAction[], notes: Note[]): Agen
 
     if (action.kind === "append" && !action.text?.trim()) return fail(action, "missing_text");
     if (action.kind === "color" && action.color === undefined) return fail(action, "bad_color");
+    if (action.kind === "due" && !isValidDueDate(action.dueOn)) return fail(action, "bad_date");
     return {
       ...action,
       status: "pending",
@@ -120,6 +126,7 @@ export interface NoteActionExecutor {
   create(body: string, title?: string): Note;
   append(id: string, text: string): void;
   setColor(id: string, color: number): void;
+  setDue(id: string, date: string): void;
   archive(id: string, archived: boolean): void;
   remove(id: string): void;
 }
@@ -155,6 +162,12 @@ export function executeAgentAction(
         const target = notes.find((n) => n.id === action.targetId);
         if (!target || action.color === undefined) return fail(action, "bad_color");
         executor.setColor(target.id, action.color);
+        return { ...action, status: "done" };
+      }
+      case "due": {
+        const target = notes.find((n) => n.id === action.targetId);
+        if (!target || !isValidDueDate(action.dueOn)) return fail(action, "bad_date");
+        executor.setDue(target.id, action.dueOn!);
         return { ...action, status: "done" };
       }
       case "archive": {

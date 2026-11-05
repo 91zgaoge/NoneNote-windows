@@ -89,6 +89,10 @@ async function init(): Promise<AppModel> {
         if (note) noteStore.updateBody(id, (note.body + "\n" + text).trim());
       },
       setColor: (id, color) => noteStore.setColor(id, color),
+      setDue: (id, date) => {
+        const map = { ...settingsStore.get().noteDueOns, [id]: date };
+        void settingsStore.update({ noteDueOns: map });
+      },
       archive: (id, archived) => noteStore.setArchived(id, archived),
       remove: (id) => noteStore.delete(id),
     },

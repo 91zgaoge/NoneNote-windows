@@ -4,7 +4,7 @@ import type { AppSettings } from "../core/types.ts";
 import { activeProfile } from "../core/types.ts";
 import { AiClient } from "../core/ai/client.ts";
 import { httpTransport } from "../platform/httpTransport.ts";
-import { makeBackup, parseBackup } from "../core/backup.ts";
+import { decodeAttachmentPayload, makeBackup, parseBackup } from "../core/backup.ts";
 import { uuid } from "../core/text.ts";
 import { t, type Lang } from "../i18n.ts";
 import { MemorySection } from "./MemorySection.tsx";
@@ -69,12 +69,26 @@ export function SettingsPanel({ model, lang }: Props) {
   async function exportBackup() {
     if (!window.confirm(t(lang, "settings.backup.warning"))) return;
     const settings = model.settingsStore.get();
-    const [pages, state, chat] = await Promise.all([
+    const [pages, state, chat, metas] = await Promise.all([
       model.wikiStore.loadPages(),
       model.wikiStore.loadState(),
       model.chatStore.load(),
+      model.attachmentStore.loadAll(),
     ]);
-    const backup = makeBackup(model.noteStore.all(), settings, pages, state, chat);
+    const attachments = await Promise.all(
+      metas.map(async (meta) => ({
+        meta,
+        bytes: meta.hasPayload ? await model.attachmentStore.payload(meta.id) : null,
+      })),
+    );
+    const backup = makeBackup(
+      model.noteStore.all(),
+      settings,
+      pages,
+      state,
+      chat,
+      attachments,
+    );
     const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -99,6 +113,14 @@ export function SettingsPanel({ model, lang }: Props) {
       for (const p of backup.pages) await model.wikiStore.savePage(p);
       await model.wikiStore.saveState(backup.state);
       await model.chatStore.save(backup.chat);
+      for (const existing of await model.attachmentStore.loadAll()) {
+        await model.attachmentStore.remove(existing.id);
+      }
+      for (const entry of backup.attachments) {
+        const bytes = decodeAttachmentPayload(entry);
+        if (bytes) await model.attachmentStore.savePayload(entry.meta, bytes);
+        else await model.attachmentStore.upsert(entry.meta, false);
+      }
       setDraft(structuredClone(model.settingsStore.get()));
       setNotice(
         t(lang, "settings.import.done", {

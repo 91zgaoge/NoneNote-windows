@@ -1,4 +1,4 @@
-export type AgentActionKind = "create" | "append" | "color" | "archive" | "delete";
+export type AgentActionKind = "create" | "append" | "color" | "archive" | "delete" | "due";
 export type AgentActionStatus = "pending" | "done" | "failed" | "cancelled";
 export type AgentFailReason =
   | "not_found"
@@ -6,6 +6,7 @@ export type AgentFailReason =
   | "missing_text"
   | "missing_target"
   | "bad_color"
+  | "bad_date"
   | "execution_failed";
 
 /** One ```noty action parsed from an assistant answer. */
@@ -16,6 +17,7 @@ export interface AgentAction {
   text?: string;
   color?: number;
   colorName?: string;
+  dueOn?: string;
   status: AgentActionStatus;
   fail?: AgentFailReason;
   targetId?: string;

@@ -128,6 +128,8 @@ export interface AppSettings {
   wikiAutoCompileMinutes: number;
   /** Local YYYY-MM-DD of the last automatic compile (prevents same-day reruns). */
   wikiAutoCompileLastDay: string;
+  /** Local-only note due dates: note id -> yyyy-MM-dd. */
+  noteDueOns: Record<string, string>;
   language: "en" | "zh";
 }
 
@@ -160,6 +162,7 @@ export function emptySettings(): AppSettings {
     wikiAutoCompile: false,
     wikiAutoCompileMinutes: 8 * 60,
     wikiAutoCompileLastDay: "",
+    noteDueOns: {},
     language: "en",
   };
 }

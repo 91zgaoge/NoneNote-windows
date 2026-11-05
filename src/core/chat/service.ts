@@ -33,7 +33,8 @@ const SYSTEM =
   '{"action":"create","title":"...","body":"..."}, ' +
   '{"action":"append","title":"...","text":"..."}, ' +
   '{"action":"color","title":"...","color":"Sky"} (Lemon, Peach, Rose, Lilac, Sky, Mint, ' +
-  'Sand, Slate), {"action":"archive","title":"..."}, {"action":"delete","title":"..."}. ' +
+  'Sand, Slate), {"action":"due","title":"...","date":"yyyy-MM-dd"}, ' +
+  '{"action":"archive","title":"..."}, {"action":"delete","title":"..."}. ' +
   "Use an exact existing note title (or id from the material); never invent one. Do not " +
   "add a fence unless the user asked for a change.";
 

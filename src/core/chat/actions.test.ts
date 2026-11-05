@@ -64,7 +64,20 @@ test("resolves targets by id or exact title and rejects ambiguity", () => {
   assert.equal(badColor.fail, "bad_color");
 });
 
-test("executes create/append/color/archive/delete through the seam", () => {
+test("due actions need an ISO date", () => {
+  const [ok, bad] = resolveAgentActions(
+    [
+      { kind: "due", title: "Groceries", dueOn: "2026-12-01", status: "pending" },
+      { kind: "due", title: "Groceries", dueOn: "tomorrow", status: "pending" },
+    ],
+    [note("n1", "Groceries")],
+  );
+  assert.equal(ok.status, "pending");
+  assert.equal(bad.status, "failed");
+  assert.equal(bad.fail, "bad_date");
+});
+
+test("executes create/append/color/due/archive/delete through the seam", () => {
   const notes = [note("n1", "Groceries", "milk")];
   const calls: string[] = [];
   const executor: NoteActionExecutor = {
@@ -78,6 +91,9 @@ test("executes create/append/color/archive/delete through the seam", () => {
     setColor(id, color) {
       calls.push(`color:${id}:${color}`);
     },
+    setDue(id, date) {
+      calls.push(`due:${id}:${date}`);
+    },
     archive(id, archived) {
       calls.push(`archive:${id}:${archived}`);
     },
@@ -90,6 +106,7 @@ test("executes create/append/color/archive/delete through the seam", () => {
       { kind: "create", title: "New", text: "body", status: "pending" },
       { kind: "append", id: "n1", text: "eggs", status: "pending" },
       { kind: "color", id: "n1", color: 4, status: "pending" },
+      { kind: "due", id: "n1", dueOn: "2026-12-01", status: "pending" },
       { kind: "archive", id: "n1", status: "pending" },
       { kind: "delete", id: "n1", status: "pending" },
     ],
@@ -98,12 +115,13 @@ test("executes create/append/color/archive/delete through the seam", () => {
   const done = resolved.map((a) => executeAgentAction(a, notes, executor));
   assert.deepEqual(
     done.map((a) => a.status),
-    ["done", "done", "done", "done", "done"],
+    ["done", "done", "done", "done", "done", "done"],
   );
   assert.deepEqual(calls, [
     "create:New:body",
     "append:n1:eggs",
     "color:n1:4",
+    "due:n1:2026-12-01",
     "archive:n1:true",
     "remove:n1",
   ]);

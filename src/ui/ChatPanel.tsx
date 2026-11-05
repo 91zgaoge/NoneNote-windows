@@ -136,6 +136,7 @@ export function ChatPanel({ model, lang }: Props) {
     return t(lang, `chat.action.done.${action.kind}`, {
       title,
       color: action.colorName ?? "",
+      date: action.dueOn ?? "",
     });
   }
 

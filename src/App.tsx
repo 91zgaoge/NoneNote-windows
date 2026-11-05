@@ -7,6 +7,7 @@ import { WikiPanel } from "./ui/WikiPanel.tsx";
 import { ChatPanel } from "./ui/ChatPanel.tsx";
 import { SettingsPanel } from "./ui/SettingsPanel.tsx";
 import { notePreview } from "./core/text.ts";
+import { dueState, todayLocal } from "./core/due.ts";
 import type { Note } from "./core/types.ts";
 import { t, type Lang } from "./i18n.ts";
 
@@ -111,6 +112,13 @@ export function App() {
             <div className="meta">
               {new Date(n.modified).toLocaleString()} · {notePreview(n)}
             </div>
+            {(() => {
+              const date = settings.noteDueOns[n.id];
+              const state = dueState(date, todayLocal());
+              return date && state ? (
+                <div className={`due-badge ${state}`}>{date}</div>
+              ) : null;
+            })()}
           </span>
         </button>
       </li>
