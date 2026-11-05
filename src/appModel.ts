@@ -9,6 +9,9 @@ import { WebDavClient } from "./core/sync/webdav.ts";
 import { WikiCompileService, WikiScheduler } from "./core/wiki/service.ts";
 import { ChatSessionStore } from "./core/chat/store.ts";
 import { ChatService } from "./core/chat/service.ts";
+import { AttachmentStore } from "./core/attachment/store.ts";
+import { AttachmentSync } from "./core/attachment/sync.ts";
+import { blobs } from "./platform/blobStore.ts";
 
 export interface AppModel {
   noteStore: NoteStore;
@@ -19,6 +22,7 @@ export interface AppModel {
   wikiScheduler: WikiScheduler;
   chatStore: ChatSessionStore;
   chatService: ChatService;
+  attachmentStore: AttachmentStore;
   persistence: JsonNotePersistence;
   subscribeRemoteApplied(fn: () => void): () => void;
 }
@@ -35,6 +39,11 @@ async function init(): Promise<AppModel> {
 
   const wikiStore = new FileWikiStore(storage);
   const remoteListeners = new Set<() => void>();
+  const attachmentStore = new AttachmentStore(storage, blobs);
+  const attachmentSync = new AttachmentSync(
+    attachmentStore,
+    (cfg) => new WebDavClient(cfg.webdavUrl, cfg.webdavUser, cfg.webdavPass, httpTransport),
+  );
   const chatStore = new ChatSessionStore(storage);
   const chatService = new ChatService({
     notes: () => noteStore.all(),
@@ -57,6 +66,7 @@ async function init(): Promise<AppModel> {
     wikiStore,
     settings: () => settingsStore.get(),
     transport: httpTransport,
+    attachments: () => attachmentStore.loadAll(),
   });
   const wikiScheduler = new WikiScheduler(wikiService, settingsStore);
   wikiScheduler.onError = (e) => console.error("scheduled wiki compile failed:", e.message);
@@ -75,6 +85,8 @@ async function init(): Promise<AppModel> {
     onRemoteApplied: () => {
       for (const fn of remoteListeners) fn();
     },
+    attachments: attachmentStore,
+    attachmentSync,
   });
   sync.start();
 
@@ -87,6 +99,7 @@ async function init(): Promise<AppModel> {
     wikiScheduler,
     chatStore,
     chatService,
+    attachmentStore,
     persistence,
     subscribeRemoteApplied(fn) {
       remoteListeners.add(fn);

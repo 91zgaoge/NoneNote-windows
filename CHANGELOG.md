@@ -1,5 +1,34 @@
 # Changelog
 
+## 1.8.0 (2026-11-05) — attachments over WebDAV
+
+- **Attachment library**: add files to a note, see image thumbnails, download
+  and remove them. Metadata lives next to the notes; payloads live in
+  `app_data/blobs`.
+- **Cross-platform ciphertext sync**: payloads upload as
+  `NoneNote/attachments/<id>` sealed with PBKDF2-SHA256 (WebDAV password,
+  120k rounds) + AES-GCM in Android's `[4-byte length][IV][ciphertext+tag]`
+  1 MiB chunk format. A peer with the same WebDAV credentials can decrypt.
+- **Binary transport**: Tauri `http_request` accepts/returns base64 bodies and
+  new `blob_write/read/delete` commands store payloads outside the JSON state.
+- **Sync integration**: attachment metadata participates in `sync.json`
+  merge; the sync pass uploads missing/mismatched payloads and downloads
+  remote ones, verifying size and sha256 before keeping them. Sync status
+  shows uploaded/downloaded/failed counts.
+- **Honest limits**: local payloads are not encrypted at rest on Windows yet;
+  text extraction/AI summaries are not generated here (remote metadata is
+  still passed to the wiki compiler); backups do not include payload bytes.
+
+### Verification
+
+- `npm test`: **66 tests, 0 failures** (ciphered-size/round-trip/wrong-password,
+  two-client ciphertext upload/download over a real HTTP DAV server).
+- `npm run build`: **success** (`NoneNote-1.8.0-web`).
+- `cd src-tauri && cargo check`: **success** (blob commands, binary HTTP).
+- Attachment UI (thumbnail/download/remove) checked via Chrome screenshot.
+- **未验证**: WebView2 file picker/download, large-file streaming, Windows
+  host, real WebDAV server.
+
 ## 1.7.0 (2026-11-05) — note actions in chat, Android palette
 
 - **Agent actions**: the Ask tab now understands the shared ```noty fenced

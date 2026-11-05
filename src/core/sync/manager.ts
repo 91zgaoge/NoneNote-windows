@@ -1,4 +1,6 @@
-import type { AppSettings, Note, SyncSnapshot } from "../types.ts";
+import type { AppSettings, Attachment, Note, SyncSnapshot } from "../types.ts";
+import type { AttachmentStore } from "../attachment/store.ts";
+import type { AttachmentSync, AttachmentStats } from "../attachment/sync.ts";
 import { SYNC_DELETION_LOCAL_OFF, SYNC_DELETION_REMOTE_OFF, SYNC_MODE_DOWNLOAD } from "../types.ts";
 import type { NoteStore } from "../notes/store.ts";
 import { decodeSnapshot, encodeSnapshot } from "./codec.ts";
@@ -7,7 +9,13 @@ import type { SyncTransport } from "./webdav.ts";
 
 export type SyncResult =
   | { kind: "not_configured" }
-  | { kind: "ok"; noteCount: number }
+  | {
+      kind: "ok";
+      noteCount: number;
+      attachmentsUploaded: number;
+      attachmentsDownloaded: number;
+      attachmentsFailed: number;
+    }
   | { kind: "failed"; detail: string };
 
 export interface SyncStateSink {
@@ -29,6 +37,8 @@ export class SyncManager {
   private readonly clientFactory: (cfg: AppSettings) => SyncTransport;
   private readonly onRemoteApplied: () => void;
   private readonly now: () => number;
+  private readonly attachments: AttachmentStore | null;
+  private readonly attachmentSync: AttachmentSync | null;
 
   private deleted: Record<string, number> = {};
   private knownIds = new Set<string>();
@@ -50,6 +60,8 @@ export class SyncManager {
     clientFactory: (cfg: AppSettings) => SyncTransport;
     onRemoteApplied?: () => void;
     now?: () => number;
+    attachments?: AttachmentStore;
+    attachmentSync?: AttachmentSync;
   }) {
     this.store = opts.store;
     this.settings = opts.settings;
@@ -57,6 +69,8 @@ export class SyncManager {
     this.clientFactory = opts.clientFactory;
     this.onRemoteApplied = opts.onRemoteApplied ?? (() => {});
     this.now = opts.now ?? (() => Date.now());
+    this.attachments = opts.attachments ?? null;
+    this.attachmentSync = opts.attachmentSync ?? null;
   }
 
   start(): void {
@@ -123,9 +137,9 @@ export class SyncManager {
         }
       }
 
-      // Windows has no attachment editor yet. Reuse the remote metadata as the
-      // local side so a note this client wins never drops its attachments.
-      const localAttachments = remote.attachments;
+      const localAttachments = this.attachments
+        ? groupByNote(await this.attachments.loadAll())
+        : remote.attachments;
       const merged = merge(local, this.deleted, remote, now, localAttachments);
 
       let applied = 0;
@@ -137,6 +151,8 @@ export class SyncManager {
         );
         if (applied > 0) this.onRemoteApplied();
       }
+
+      if (this.attachments) await this.attachments.replaceMetadata(merged.attachments);
 
       this.deleted = { ...merged.deleted };
       this.knownIds = new Set(
@@ -150,8 +166,29 @@ export class SyncManager {
         this.lastPushedHash = hash;
       }
 
+      let stats: AttachmentStats = {
+        uploaded: 0,
+        downloaded: 0,
+        failed: 0,
+        failures: [],
+      };
+      if (this.attachmentSync) {
+        try {
+          stats = await this.attachmentSync.sync(merged, cfg);
+        } catch (e) {
+          stats.failed = Object.values(merged.attachments).flat().length;
+          stats.failures = [e instanceof Error ? e.message : String(e)];
+        }
+      }
+
       this.lastSyncAt = now;
-      this.lastSyncResult = { kind: "ok", noteCount: merged.notes.length };
+      this.lastSyncResult = {
+        kind: "ok",
+        noteCount: merged.notes.length,
+        attachmentsUploaded: stats.uploaded,
+        attachmentsDownloaded: stats.downloaded,
+        attachmentsFailed: stats.failed,
+      };
       this.onStatus?.();
       return this.lastSyncResult;
     } catch (e) {
@@ -204,6 +241,16 @@ export class SyncManager {
       this.knownIds = new Set();
     }
   }
+}
+
+function groupByNote(list: Attachment[]): Record<string, Attachment[]> {
+  const out: Record<string, Attachment[]> = {};
+  for (const a of list) {
+    const arr = out[a.noteId] ?? [];
+    arr.push(a);
+    out[a.noteId] = arr;
+  }
+  return out;
 }
 
 function notesEqual(a: Note, b: Note): boolean {

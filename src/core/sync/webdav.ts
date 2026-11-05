@@ -1,4 +1,5 @@
 import { basicAuth, statusError } from "../http.ts";
+import { base64ToBytes, bytesToBase64 } from "../base64.ts";
 import type { HttpTransport } from "../http.ts";
 
 /** The two operations the sync engine needs; seam for fakes in tests. */
@@ -17,6 +18,7 @@ export class WebDavClient implements SyncTransport {
   private readonly root: string;
   private readonly dirUrl: string;
   private readonly fileUrl: string;
+  private readonly attachmentsUrl: string;
   private readonly auth: string;
 
   private readonly http: HttpTransport;
@@ -31,6 +33,7 @@ export class WebDavClient implements SyncTransport {
     this.root = baseUrl.replace(/\/+$/, "");
     this.dirUrl = `${this.root}/NoneNote`;
     this.fileUrl = `${this.dirUrl}/sync.json`;
+    this.attachmentsUrl = `${this.dirUrl}/attachments`;
     this.auth = basicAuth(user, pass);
   }
 
@@ -76,6 +79,70 @@ export class WebDavClient implements SyncTransport {
     } catch {
       return false;
     }
+  }
+
+  // ---- attachment payloads: NoneNote/attachments/<id> (ciphertext) ----
+
+  async headAttachment(id: string): Promise<number | null> {
+    const resp = await this.http.request({
+      method: "HEAD",
+      url: `${this.attachmentsUrl}/${id}`,
+      headers: { Authorization: this.auth },
+    });
+    if (resp.status === 404) return null;
+    if (resp.status >= 200 && resp.status < 300) {
+      const length = resp.headers["content-length"];
+      return length === undefined ? -1 : Number(length);
+    }
+    throw statusError("HEAD attachments/" + id, resp.status, resp.body);
+  }
+
+  async putAttachment(id: string, bytes: Uint8Array): Promise<void> {
+    await this.ensureAttachmentsCollection();
+    const resp = await this.http.request({
+      method: "PUT",
+      url: `${this.attachmentsUrl}/${id}`,
+      headers: {
+        Authorization: this.auth,
+        "Content-Type": "application/octet-stream",
+      },
+      bodyBase64: bytesToBase64(bytes),
+    });
+    if (resp.status < 200 || resp.status >= 300) {
+      throw statusError("PUT attachments/" + id, resp.status, resp.body);
+    }
+  }
+
+  async getAttachment(id: string): Promise<Uint8Array | null> {
+    const resp = await this.http.request({
+      method: "GET",
+      url: `${this.attachmentsUrl}/${id}`,
+      headers: { Authorization: this.auth },
+    });
+    if (resp.status === 404) return null;
+    if (resp.status < 200 || resp.status >= 300) {
+      throw statusError("GET attachments/" + id, resp.status, resp.body);
+    }
+    if (!resp.bodyBase64) throw new Error("GET attachments/" + id + ": empty body");
+    return base64ToBytes(resp.bodyBase64);
+  }
+
+  /** MKCOL the attachments collection (parent is ensured first). */
+  private async ensureAttachmentsCollection(): Promise<void> {
+    await this.ensureCollection();
+    const resp = await this.http.request({
+      method: "MKCOL",
+      url: this.attachmentsUrl,
+      headers: { Authorization: this.auth },
+    });
+    if (
+      (resp.status >= 200 && resp.status < 300) ||
+      resp.status === 405 ||
+      resp.status === 409
+    ) {
+      return;
+    }
+    throw statusError("MKCOL NoneNote/attachments", resp.status, resp.body);
   }
 
   /** MKCOL the NoneNote collection; an existing collection is fine. */

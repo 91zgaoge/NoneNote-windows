@@ -793,3 +793,42 @@ button {
 .agent-action-text {
   margin-bottom: 4px;
 }
+
+/* ---- attachments --------------------------------------------------------- */
+
+.attachments {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.attachment {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(58, 48, 8, 0.06);
+  border-radius: 9px;
+  padding: 6px 8px;
+}
+
+.attachment-thumb {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.attachment-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.attachment-name {
+  font-size: 12px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

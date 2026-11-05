@@ -1,4 +1,4 @@
-import type { AiProfile, AppSettings, Note, WikiPage } from "../types.ts";
+import type { AiProfile, AppSettings, Attachment, Note, WikiPage } from "../types.ts";
 import { activeProfile, extractProfile } from "../types.ts";
 import type { HttpTransport } from "../http.ts";
 import { AiClient } from "../ai/client.ts";
@@ -28,6 +28,7 @@ export interface WikiCompileDeps {
   wikiStore: WikiStore;
   settings: () => AppSettings;
   transport: HttpTransport;
+  attachments?: () => Promise<Attachment[]>;
   clientFactory?: (profile: AiProfile) => LlmClient;
 }
 
@@ -117,6 +118,7 @@ export class WikiCompileService {
       llm,
       extractLlm,
       store: this.deps.wikiStore,
+      attachmentsProvider: this.deps.attachments ?? (async () => []),
       budget: {
         maxPagesPerRun: opts.background
           ? BACKGROUND_MAX_PAGES_PER_RUN

@@ -21,6 +21,7 @@ struct HttpRequest {
 }
 
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 struct HttpResponse {
     status: u16,
     headers: HashMap<String, String>,
@@ -133,6 +134,60 @@ async fn edge_set_expanded(app: tauri::AppHandle, expanded: bool) -> Result<(), 
     Ok(())
 }
 
+fn blob_path(app: &tauri::AppHandle, key: &str) -> Result<PathBuf, String> {
+    if key.is_empty()
+        || key.len() > 200
+        || key.contains("..")
+        || !key
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '_' || c == '-')
+    {
+        return Err("invalid blob key".into());
+    }
+    let dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("app data dir: {e}"))?
+        .join("blobs");
+    fs::create_dir_all(&dir).map_err(|e| format!("create blob dir: {e}"))?;
+    Ok(dir.join(key))
+}
+
+#[tauri::command]
+async fn blob_write(app: tauri::AppHandle, key: String, base64: String) -> Result<(), String> {
+    let path = blob_path(&app, &key)?;
+    let bytes = STANDARD
+        .decode(base64)
+        .map_err(|e| format!("invalid blob base64: {e}"))?;
+    let tmp = path.with_extension(format!("tmp-{}", std::process::id()));
+    fs::write(&tmp, &bytes).map_err(|e| format!("write blob {key}: {e}"))?;
+    if let Err(first) = fs::rename(&tmp, &path) {
+        let _ = fs::remove_file(&path);
+        fs::rename(&tmp, &path).map_err(|e| format!("replace blob {key}: {e} (first: {first})"))?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+async fn blob_read(app: tauri::AppHandle, key: String) -> Result<Option<String>, String> {
+    let path = blob_path(&app, &key)?;
+    match fs::read(&path) {
+        Ok(bytes) => Ok(Some(STANDARD.encode(bytes))),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(e) => Err(format!("read blob {key}: {e}")),
+    }
+}
+
+#[tauri::command]
+async fn blob_delete(app: tauri::AppHandle, key: String) -> Result<(), String> {
+    let path = blob_path(&app, &key)?;
+    match fs::remove_file(&path) {
+        Ok(()) => Ok(()),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(e) => Err(format!("delete blob {key}: {e}")),
+    }
+}
+
 #[tauri::command]
 async fn state_delete(app: tauri::AppHandle, key: String) -> Result<(), String> {
     let path = state_path(&app, &key)?;
@@ -194,6 +249,9 @@ pub fn run() {
             state_load,
             state_save,
             state_delete,
+            blob_write,
+            blob_read,
+            blob_delete,
             open_note,
             edge_place,
             edge_set_expanded,

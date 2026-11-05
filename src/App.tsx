@@ -1,6 +1,6 @@
 import { useEffect, useReducer, useRef, useState } from "react";
 import { getAppModel, type AppModel } from "./appModel.ts";
-import { NoteEditor } from "./ui/NoteEditor.tsx";
+import { NotePane } from "./ui/NotePane.tsx";
 import { NOTE_COLORS } from "./core/palette.ts";
 import { hasTauri } from "./platform/tauri.ts";
 import { WikiPanel } from "./ui/WikiPanel.tsx";
@@ -73,7 +73,14 @@ export function App() {
     : sync === null
       ? t(lang, "sync.never")
       : sync.kind === "ok"
-        ? t(lang, "sync.ok", { n: sync.noteCount })
+        ? t(lang, "sync.ok", { n: sync.noteCount }) +
+          (sync.attachmentsUploaded + sync.attachmentsDownloaded + sync.attachmentsFailed > 0
+            ? ` · ${t(lang, "sync.attachments", {
+                up: sync.attachmentsUploaded,
+                down: sync.attachmentsDownloaded,
+                failed: sync.attachmentsFailed,
+              })}`
+            : "")
         : sync.kind === "failed"
           ? t(lang, "sync.failed", { detail: sync.detail })
           : t(lang, "sync.not_configured");
@@ -179,24 +186,7 @@ export function App() {
         ) : tab === "settings" ? (
           <SettingsPanel model={model} lang={lang} />
         ) : selected ? (
-          <NoteEditor
-            key={selected.id}
-            note={selected}
-            lang={lang}
-            onBody={(id, body) => model.noteStore.updateBody(id, body)}
-            onTitle={(id, title) => model.noteStore.setTitle(id, title)}
-            onPin={(id) => model.noteStore.togglePin(id)}
-            onArchive={(id, archived) => {
-              model.noteStore.setArchived(id, archived);
-              setSelectedId(null);
-            }}
-            onDelete={(id) => {
-              model.noteStore.delete(id);
-              setSelectedId(null);
-            }}
-            onColor={(id, color) => model.noteStore.setColor(id, color)}
-            onMove={(id, by) => model.noteStore.reorder(id, by)}
-          />
+          <NotePane key={selected.id} model={model} note={selected} lang={lang} />
         ) : (
           <div className="empty">
             <h2>{t(lang, "editor.select")}</h2>

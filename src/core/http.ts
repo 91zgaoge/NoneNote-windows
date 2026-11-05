@@ -3,6 +3,8 @@ export interface HttpRequest {
   url: string;
   headers?: Record<string, string>;
   body?: string;
+  /** Binary body; wins over [body] when present. */
+  bodyBase64?: string;
   timeoutMs?: number;
 }
 
@@ -10,6 +12,8 @@ export interface HttpResponse {
   status: number;
   headers: Record<string, string>;
   body: string;
+  /** Base64 of the raw response bytes (for attachment downloads). */
+  bodyBase64?: string;
 }
 
 /** Seam for tests and for the Tauri/browser transport split. */

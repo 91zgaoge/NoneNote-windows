@@ -179,6 +179,11 @@ export class NoteStore {
     this.mutate(id, (n) => ({ ...n, title: clean, modified: Date.now() }));
   }
 
+  /** Bumps `modified` without changing content (e.g. after adding an attachment). */
+  touch(id: string): void {
+    this.mutate(id, (n) => ({ ...n, modified: Date.now() }));
+  }
+
   togglePin(id: string): void {
     this.mutate(id, (n) => ({ ...n, pinned: !n.pinned }));
   }
