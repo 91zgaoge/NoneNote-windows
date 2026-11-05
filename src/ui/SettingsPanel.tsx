@@ -68,11 +68,12 @@ export function SettingsPanel({ model, lang }: Props) {
   async function exportBackup() {
     if (!window.confirm(t(lang, "settings.backup.warning"))) return;
     const settings = model.settingsStore.get();
-    const [pages, state] = await Promise.all([
+    const [pages, state, chat] = await Promise.all([
       model.wikiStore.loadPages(),
       model.wikiStore.loadState(),
+      model.chatStore.load(),
     ]);
-    const backup = makeBackup(model.noteStore.all(), settings, pages, state);
+    const backup = makeBackup(model.noteStore.all(), settings, pages, state, chat);
     const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -96,6 +97,7 @@ export function SettingsPanel({ model, lang }: Props) {
       }
       for (const p of backup.pages) await model.wikiStore.savePage(p);
       await model.wikiStore.saveState(backup.state);
+      await model.chatStore.save(backup.chat);
       setDraft(structuredClone(model.settingsStore.get()));
       setNotice(
         t(lang, "settings.import.done", {

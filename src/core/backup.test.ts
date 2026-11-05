@@ -34,7 +34,8 @@ test("backup round-trips notes, settings and the wiki", () => {
     },
   ];
   const state = { ...emptyWikiState(), noteHashes: { n1: "abc" } };
-  const text = JSON.stringify(makeBackup([note], settings, pages, state));
+  const chat = [{ id: "c1", title: "Hi", messages: [], updatedAt: 4 }];
+  const text = JSON.stringify(makeBackup([note], settings, pages, state, chat));
   assert.ok(text.includes("windows-backup"));
   const back = parseBackup(text);
   assert.equal(back.notes.length, 1);
@@ -43,6 +44,7 @@ test("backup round-trips notes, settings and the wiki", () => {
   assert.equal(back.settings.webdavPass, "secret");
   assert.equal(back.pages[0].name, "Topic");
   assert.equal(back.state.noteHashes.n1, "abc");
+  assert.equal(back.chat[0].id, "c1");
 });
 
 test("foreign JSON is rejected", () => {

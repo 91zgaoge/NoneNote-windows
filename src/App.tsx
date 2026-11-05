@@ -4,19 +4,22 @@ import { NoteEditor } from "./ui/NoteEditor.tsx";
 import { NOTE_COLORS } from "./core/palette.ts";
 import { hasTauri } from "./platform/tauri.ts";
 import { WikiPanel } from "./ui/WikiPanel.tsx";
+import { ChatPanel } from "./ui/ChatPanel.tsx";
 import { SettingsPanel } from "./ui/SettingsPanel.tsx";
 import { notePreview } from "./core/text.ts";
 import type { Note } from "./core/types.ts";
 import { t, type Lang } from "./i18n.ts";
 
-type Tab = "notes" | "archive" | "wiki" | "settings";
+type Tab = "notes" | "archive" | "wiki" | "ask" | "settings";
 
 export function App() {
   const [model, setModel] = useState<AppModel | null>(null);
   const [, force] = useReducer((x: number) => x + 1, 0);
   const [tab, setTab] = useState<Tab>(() => {
     const hash = typeof location === "undefined" ? "" : location.hash.replace("#", "");
-    return hash === "archive" || hash === "wiki" || hash === "settings" ? hash : "notes";
+    return hash === "archive" || hash === "wiki" || hash === "ask" || hash === "settings"
+      ? hash
+      : "notes";
   });
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -120,6 +123,7 @@ export function App() {
               ["notes", t(lang, "tabs.notes")],
               ["archive", t(lang, "tabs.archive")],
               ["wiki", t(lang, "tabs.wiki")],
+              ["ask", t(lang, "tabs.ask")],
               ["settings", t(lang, "tabs.settings")],
             ] as [Tab, string][]
           ).map(([id, label]) => (
@@ -170,6 +174,8 @@ export function App() {
       <main className="main">
         {tab === "wiki" ? (
           <WikiPanel model={model} lang={lang} revision={revision} />
+        ) : tab === "ask" ? (
+          <ChatPanel model={model} lang={lang} />
         ) : tab === "settings" ? (
           <SettingsPanel model={model} lang={lang} />
         ) : selected ? (

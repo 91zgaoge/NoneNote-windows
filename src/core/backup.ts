@@ -1,6 +1,7 @@
 import type { AppSettings, Note, WikiPage, WikiState } from "../core/types.ts";
 import { emptyWikiState } from "../core/types.ts";
 import { decodeSnapshot, encodeSnapshot } from "../core/sync/codec.ts";
+import type { ChatSession } from "./chat/types.ts";
 
 /**
  * Full backup (settings, notes, wiki) in one JSON file. Mirrors the Android
@@ -16,6 +17,7 @@ export interface BackupFile {
   notes: unknown[];
   settings: AppSettings;
   wiki: { pages: WikiPage[]; state: WikiState };
+  chat: ChatSession[];
 }
 
 export function makeBackup(
@@ -23,6 +25,7 @@ export function makeBackup(
   settings: AppSettings,
   pages: WikiPage[],
   state: WikiState,
+  chat: ChatSession[] = [],
 ): BackupFile {
   return {
     app: "NoneNote",
@@ -37,6 +40,7 @@ export function makeBackup(
     })).notes,
     settings,
     wiki: { pages, state },
+    chat,
   };
 }
 
@@ -45,6 +49,7 @@ export function parseBackup(text: string): {
   settings: Partial<AppSettings>;
   pages: WikiPage[];
   state: WikiState;
+  chat: ChatSession[];
 } {
   const parsed = JSON.parse(text) as Partial<BackupFile>;
   if (parsed.app !== "NoneNote" || parsed.format !== "windows-backup") {
@@ -58,5 +63,6 @@ export function parseBackup(text: string): {
     settings: parsed.settings ?? {},
     pages: parsed.wiki?.pages ?? [],
     state: parsed.wiki?.state ?? emptyWikiState(),
+    chat: Array.isArray(parsed.chat) ? parsed.chat : [],
   };
 }

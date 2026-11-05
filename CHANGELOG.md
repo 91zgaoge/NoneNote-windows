@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.6.0 (2026-11-05) — Ask your notes (grounded chat)
+
+- **New Ask tab**: a second-brain chat grounded in the compiled wiki and raw
+  notes. Retrieval uses mixed ASCII/CJK term overlap (CJK bigrams), ranks
+  synthesized pages above notes, and caps the context at 12k characters.
+- **Grounded prompt**: stable system prefix, retrieved material and recent
+  conversation before the question, question at the tail; answers list the
+  pages/notes they used and say when the notes do not contain the answer.
+- **Local sessions**: chat sessions are persisted in app data, shown in a
+  session list, and included in JSON backups (export/import).
+- **Honest scope**: no streaming, no memory extraction, no agent
+  actions (archive/delete) yet — those remain Android-only.
+- **Backup format** gains an optional `chat` array; older backups still import.
+
+### Verification
+
+- `npm test`: **55 tests, 0 failures** (retrieval ranking/budget/CJK, chat
+  grounding/history/error/empty-answer, session store, backup chat).
+- `npm run build`: **success** (`NoneNote-1.6.0-web`).
+- Ask tab checked via Chrome screenshot.
+- **未验证**: real LLM answers, live retrieval quality on a large wiki.
+
 ## 1.5.0 (2026-11-05) — scheduled compile, expanded deck, real-HTTP sync test
 
 - **Daily scheduled compile**: settings toggle + time-of-day (default 08:00,

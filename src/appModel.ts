@@ -7,6 +7,8 @@ import { NoteStore } from "./core/notes/store.ts";
 import { SyncManager } from "./core/sync/manager.ts";
 import { WebDavClient } from "./core/sync/webdav.ts";
 import { WikiCompileService, WikiScheduler } from "./core/wiki/service.ts";
+import { ChatSessionStore } from "./core/chat/store.ts";
+import { ChatService } from "./core/chat/service.ts";
 
 export interface AppModel {
   noteStore: NoteStore;
@@ -15,6 +17,8 @@ export interface AppModel {
   sync: SyncManager;
   wikiService: WikiCompileService;
   wikiScheduler: WikiScheduler;
+  chatStore: ChatSessionStore;
+  chatService: ChatService;
   persistence: JsonNotePersistence;
   subscribeRemoteApplied(fn: () => void): () => void;
 }
@@ -31,6 +35,13 @@ async function init(): Promise<AppModel> {
 
   const wikiStore = new FileWikiStore(storage);
   const remoteListeners = new Set<() => void>();
+  const chatStore = new ChatSessionStore(storage);
+  const chatService = new ChatService({
+    notes: () => noteStore.all(),
+    pages: () => wikiStore.loadPages(),
+    settings: () => settingsStore.get(),
+    transport: httpTransport,
+  });
   const wikiService = new WikiCompileService({
     notes: () => noteStore.all(),
     wikiStore,
@@ -64,6 +75,8 @@ async function init(): Promise<AppModel> {
     sync,
     wikiService,
     wikiScheduler,
+    chatStore,
+    chatService,
     persistence,
     subscribeRemoteApplied(fn) {
       remoteListeners.add(fn);
