@@ -8,12 +8,26 @@
     <style>
       html, body {
         margin: 0;
+        height: 100%;
         background: transparent;
         overflow: hidden;
+        font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+      }
+      #edge {
+        height: 100%;
+      }
+      .edge-deck {
+        display: flex;
+        flex-direction: row-reverse;
+        align-items: center;
+        height: 100%;
+        gap: 10px;
+        box-sizing: border-box;
       }
       .edge-pill {
         width: 44px;
         height: 480px;
+        flex: 0 0 44px;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -37,10 +51,77 @@
         width: 7px;
         opacity: 1;
       }
+      .edge-cards {
+        display: none;
+        width: 298px;
+        max-height: 480px;
+        overflow: auto;
+        flex-direction: column;
+        gap: 8px;
+        padding: 12px;
+        box-sizing: border-box;
+        background: rgba(250, 247, 241, 0.97);
+        border-radius: 14px;
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.24);
+        color: #2a2418;
+      }
+      #edge.expanded .edge-cards {
+        display: flex;
+      }
+      .edge-heading {
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #6b6254;
+        padding: 2px 4px 4px;
+      }
+      .edge-empty {
+        font-size: 13px;
+        color: #6b6254;
+        padding: 18px 6px;
+        text-align: center;
+      }
+      .edge-card {
+        display: block;
+        width: 100%;
+        text-align: left;
+        border: 0;
+        border-left: 4px solid var(--dash, #e0ad08);
+        border-radius: 10px;
+        background: #f3eee4;
+        padding: 10px 12px;
+        cursor: pointer;
+        font: inherit;
+        color: inherit;
+      }
+      .edge-card:hover {
+        background: #ece5d6;
+      }
+      .edge-card-title {
+        font-weight: 600;
+        font-size: 13px;
+        margin-bottom: 2px;
+      }
+      .edge-card-meta {
+        font-size: 12px;
+        color: #6b6254;
+        line-height: 1.4;
+        max-height: 2.8em;
+        overflow: hidden;
+      }
     </style>
   </head>
   <body>
-    <div id="edge"></div>
+    <div id="edge">
+      <div class="edge-deck">
+        <div class="edge-pill" aria-label="NoneNote note deck">
+          <span class="edge-dash" style="background: #E0AD08"></span>
+          <span class="edge-dash" style="background: #2280D6"></span>
+          <span class="edge-dash" style="background: #0E9B6E"></span>
+          <span class="edge-dash" style="background: #B54A3C"></span>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/edge.ts"></script>
   </body>
 </html>

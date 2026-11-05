@@ -604,3 +604,15 @@ button {
 .settings-group .button {
   margin-top: 4px;
 }
+
+.settings-group label.inline-check {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-primary);
+  font-size: 13px;
+}
+
+.settings-group label.inline-check input {
+  width: auto;
+}

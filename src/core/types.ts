@@ -123,6 +123,11 @@ export interface AppSettings {
   activeProfileId: string;
   wikiExtractProfileId: string;
   wikiMaxPagesPerRun: number;
+  wikiAutoCompile: boolean;
+  /** Local wall-clock time of day, 0..1439 minutes. */
+  wikiAutoCompileMinutes: number;
+  /** Local YYYY-MM-DD of the last automatic compile (prevents same-day reruns). */
+  wikiAutoCompileLastDay: string;
   language: "en" | "zh";
 }
 
@@ -152,6 +157,9 @@ export function emptySettings(): AppSettings {
     activeProfileId: profile.id,
     wikiExtractProfileId: "",
     wikiMaxPagesPerRun: 0,
+    wikiAutoCompile: false,
+    wikiAutoCompileMinutes: 8 * 60,
+    wikiAutoCompileLastDay: "",
     language: "en",
   };
 }

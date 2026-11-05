@@ -69,5 +69,6 @@ function normalize(s: AppSettings): AppSettings {
       ? s.wikiExtractProfileId
       : "",
     wikiMaxPagesPerRun: Math.max(0, Math.floor(s.wikiMaxPagesPerRun || 0)),
+    wikiAutoCompileMinutes: Math.min(1439, Math.max(0, Math.floor(s.wikiAutoCompileMinutes || 0))),
   };
 }

@@ -5,7 +5,7 @@ Paper Desk note app for Windows. Shares design tokens and the WebDAV
 (`docs/plans/2026-09-01-ui-redesign-design.md`,
 `docs/plans/2026-08-31-multiplatform-sync-design.md` in the Android repo).
 
-## Status (1.4.0)
+## Status (1.5.0)
 
 - **Notes:** local JSON persistence in the Tauri app-data directory, create /
   edit / pin / archive / delete with undo, search, reorder, 8-colour palette.
@@ -24,10 +24,13 @@ Paper Desk note app for Windows. Shares design tokens and the WebDAV
 - **Backup:** one JSON file with notes, settings (including secrets) and the
   compiled wiki; import replaces all three.
 - **i18n:** English + 简体中文 for all user-visible strings.
-- **Edge deck:** the always-on-top window shows a dash per recent note;
-  clicking one brings the main window forward and opens that note.
+- **Scheduled compile:** optional daily wall-clock run (default 08:00) with the
+  fixed 60-page background budget; it runs only while NoneNote is open.
+- **Edge deck:** the always-on-top window snaps to the right screen edge, shows
+  a dash per recent note, and expands on hover into a card panel; clicking a
+  dash or card opens that note in the main window.
 - **Not yet ported:** attachments (upload/view), second-brain chat / memory /
-  agent actions, scheduled background compile, full edge-deck fan gestures.
+  agent actions, full edge-deck fan gestures.
 - **Verification:** `npm test` and `npm run build` pass on macOS; `cargo check`
   passes; notes/wiki/settings screenshots were checked in Chrome (web mode).
   **未验证** on a Windows host, against a real WebDAV server, or against a real
@@ -43,7 +46,8 @@ cd src-tauri && cargo check
 
 The core is deliberately platform-free (`src/core/`) and tested with fakes:
 sync codec/merge/manager, wiki compiler (batching, concurrency, checkpoints,
-retries, budgets), prompt metrics, backup, document projection.
+retries, budgets), prompt metrics, backup, document projection, the daily
+scheduler, and a real-HTTP WebDAV end-to-end test (an in-process DAV server).
 
 ## Design tokens
 

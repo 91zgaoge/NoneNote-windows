@@ -1,15 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { AppModel } from "../appModel.ts";
-import { AiClient } from "../core/ai/client.ts";
-import {
-  WikiCompiler,
-  OVERVIEW_PAGE,
-  stalePages,
-  type Progress,
-  type Summary,
-} from "../core/wiki/compiler.ts";
-import { activeProfile, extractProfile, type WikiPage } from "../core/types.ts";
-import { httpTransport } from "../platform/httpTransport.ts";
+import { OVERVIEW_PAGE, stalePages, type Progress, type Summary } from "../core/wiki/compiler.ts";
+import { activeProfile, type WikiPage } from "../core/types.ts";
 import { t, type Lang } from "../i18n.ts";
 
 interface Props {
@@ -21,23 +13,48 @@ interface Props {
 export function WikiPanel({ model, lang, revision }: Props) {
   const [pages, setPages] = useState<WikiPage[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
-  const [compiling, setCompiling] = useState(false);
+  const [compiling, setCompiling] = useState(model.wikiService.running());
   const [trace, setTrace] = useState<Progress[]>([]);
-  const [summary, setSummary] = useState<Summary | null>(null);
+  const [summary, setSummary] = useState<Summary | null>(model.wikiService.lastSummary);
   const [notice, setNotice] = useState<string | null>(null);
   const [stale, setStale] = useState(false);
-  const abortRef = useRef<AbortController | null>(null);
+  const selectedRef = useRef<string | null>(null);
+  selectedRef.current = selected;
+  const langRef = useRef(lang);
+  langRef.current = lang;
 
   const loadPages = async () => {
     const loaded = await model.wikiStore.loadPages();
     setPages(loaded);
-    if (loaded.length > 0 && !loaded.some((p) => p.name === selected)) {
+    const current = selectedRef.current;
+    if (loaded.length > 0 && !loaded.some((p) => p.name === current)) {
       setSelected(loaded.find((p) => p.name === OVERVIEW_PAGE)?.name ?? loaded[0].name);
     }
   };
 
   useEffect(() => {
     void loadPages();
+    const unProgress = model.wikiService.subscribeProgress((p) =>
+      setTrace((prev) => [...prev.slice(-199), p]),
+    );
+    const unSummary = model.wikiService.subscribeSummary((s) => {
+      setSummary(s);
+      void loadPages();
+    });
+    const unState = model.wikiService.subscribeState(setCompiling);
+    const unError = model.wikiService.subscribeError((e) => {
+      const language = langRef.current;
+      if (e.name === "AbortError") setNotice(t(language, "wiki.cancelled"));
+      else if (e.name === "WikiNotConfiguredError")
+        setNotice(t(language, "wiki.notConfigured"));
+      else setNotice(t(language, "wiki.compileFailed", { detail: e.message }));
+    });
+    return () => {
+      unProgress();
+      unSummary();
+      unState();
+      unError();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -57,7 +74,7 @@ export function WikiPanel({ model, lang, revision }: Props) {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pages, noteSig]);
+  }, [pages, noteSig, revision]);
 
   const sortedPages = useMemo(
     () =>
@@ -73,66 +90,11 @@ export function WikiPanel({ model, lang, revision }: Props) {
     setNotice(null);
     setSummary(null);
     setTrace([]);
-    const profile = activeProfile(settings);
-    if (!profile.baseUrl.trim() || !profile.model.trim()) {
-      setNotice(t(lang, "wiki.notConfigured"));
-      return;
-    }
-    if (!model.noteStore.all().length) return;
-
-    const llm = new AiClient(
-      profile.baseUrl,
-      profile.apiKey,
-      profile.model,
-      profile.temperature,
-      profile.maxTokens,
-      httpTransport,
-    );
-    const extract = extractProfile(settings);
-    const extractLlm =
-      extract.id === profile.id
-        ? llm
-        : new AiClient(
-            extract.baseUrl,
-            extract.apiKey,
-            extract.model,
-            extract.temperature,
-            extract.maxTokens,
-            httpTransport,
-          );
-
-    const controller = new AbortController();
-    abortRef.current = controller;
-    setCompiling(true);
     try {
-      const compiler = new WikiCompiler({
-        notesProvider: () => model.noteStore.all(),
-        llm,
-        extractLlm,
-        store: model.wikiStore,
-        budget: { maxPagesPerRun: settings.wikiMaxPagesPerRun },
-        signal: controller.signal,
-        onProgress: (p) => setTrace((prev) => [...prev.slice(-199), p]),
-      });
-      const result = await compiler.compile();
-      setSummary(result);
-      await loadPages();
-    } catch (e) {
-      if (e instanceof Error && e.name === "AbortError") {
-        setNotice(t(lang, "wiki.cancelled"));
-        await loadPages();
-      } else {
-        const detail = e instanceof Error ? e.message : String(e);
-        setNotice(t(lang, "wiki.compileFailed", { detail }));
-      }
-    } finally {
-      abortRef.current = null;
-      setCompiling(false);
+      await model.wikiService.compile({ background: false });
+    } catch {
+      // The service broadcasts the error; the subscription localizes it.
     }
-  }
-
-  function cancel() {
-    abortRef.current?.abort();
   }
 
   function renderBody(body: string) {
@@ -164,6 +126,8 @@ export function WikiPanel({ model, lang, revision }: Props) {
   }
 
   const lastRows = trace.filter((p) => p.step !== "prepare").slice(-8);
+  const profile = activeProfile(settings);
+  const configured = !!profile.baseUrl.trim() && !!profile.model.trim();
 
   return (
     <div className="wiki-shell">
@@ -173,17 +137,24 @@ export function WikiPanel({ model, lang, revision }: Props) {
           <p className="muted">
             {t(lang, "wiki.pages", { n: pages.length })}
             {stale ? ` · ${t(lang, "wiki.stale")}` : ""}
+            {settings.wikiAutoCompile
+              ? ` · ${t(lang, "wiki.auto", {
+                  time: formatMinutes(settings.wikiAutoCompileMinutes),
+                })}`
+              : ""}
           </p>
         </div>
         <button
           type="button"
           className={compiling ? "button danger" : "button primary"}
-          onClick={compiling ? cancel : () => void compile()}
+          disabled={!compiling && !configured}
+          onClick={compiling ? () => model.wikiService.cancel() : () => void compile()}
         >
           {compiling ? t(lang, "wiki.cancel") : t(lang, "wiki.compile")}
         </button>
       </div>
 
+      {!configured && <div className="banner">{t(lang, "wiki.notConfigured")}</div>}
       {notice && <div className="banner">{notice}</div>}
 
       {trace.length > 0 && (
@@ -263,4 +234,10 @@ export function WikiPanel({ model, lang, revision }: Props) {
       </div>
     </div>
   );
+}
+
+function formatMinutes(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }

@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 use std::time::Duration;
-use tauri::{Emitter, Manager};
+use tauri::{Emitter, LogicalPosition, LogicalSize, Manager};
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -84,6 +84,55 @@ async fn open_note(app: tauri::AppHandle, id: String) -> Result<(), String> {
     Ok(())
 }
 
+const EDGE_WIDTH: f64 = 44.0;
+const EDGE_EXPANDED_WIDTH: f64 = 360.0;
+const EDGE_HEIGHT: f64 = 480.0;
+const EDGE_MARGIN: f64 = 8.0;
+
+fn edge_geometry(window: &tauri::WebviewWindow, width: f64) -> Result<(LogicalSize<f64>, LogicalPosition<f64>), String> {
+    let monitor = window
+        .current_monitor()
+        .map_err(|e| format!("monitor: {e}"))?
+        .or(window.primary_monitor().map_err(|e| format!("primary monitor: {e}"))?)
+        .ok_or_else(|| "no monitor".to_string())?;
+    let scale = monitor.scale_factor();
+    let logical_width = monitor.size().width as f64 / scale;
+    let y = 120.0;
+    Ok((
+        LogicalSize::new(width, EDGE_HEIGHT),
+        LogicalPosition::new(logical_width - width - EDGE_MARGIN, y),
+    ))
+}
+
+/// Snaps the edge window to the right screen edge at the collapsed width.
+#[tauri::command]
+async fn edge_place(app: tauri::AppHandle) -> Result<(), String> {
+    let window = app
+        .get_webview_window("edge")
+        .ok_or_else(|| "edge window is missing".to_string())?;
+    let (size, position) = edge_geometry(&window, EDGE_WIDTH)?;
+    window.set_size(size).map_err(|e| format!("edge size: {e}"))?;
+    window
+        .set_position(position)
+        .map_err(|e| format!("edge position: {e}"))?;
+    Ok(())
+}
+
+/// Grows the edge window leftwards so the note cards can appear on hover.
+#[tauri::command]
+async fn edge_set_expanded(app: tauri::AppHandle, expanded: bool) -> Result<(), String> {
+    let window = app
+        .get_webview_window("edge")
+        .ok_or_else(|| "edge window is missing".to_string())?;
+    let width = if expanded { EDGE_EXPANDED_WIDTH } else { EDGE_WIDTH };
+    let (size, position) = edge_geometry(&window, width)?;
+    window.set_size(size).map_err(|e| format!("edge size: {e}"))?;
+    window
+        .set_position(position)
+        .map_err(|e| format!("edge position: {e}"))?;
+    Ok(())
+}
+
 #[tauri::command]
 async fn state_delete(app: tauri::AppHandle, key: String) -> Result<(), String> {
     let path = state_path(&app, &key)?;
@@ -146,6 +195,8 @@ pub fn run() {
             state_save,
             state_delete,
             open_note,
+            edge_place,
+            edge_set_expanded,
             http_request
         ])
         .run(tauri::generate_context!())

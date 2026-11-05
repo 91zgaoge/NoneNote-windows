@@ -318,6 +318,25 @@ export function SettingsPanel({ model, lang }: Props) {
             onChange={(e) => patch({ wikiMaxPagesPerRun: Number(e.target.value) })}
           />
         </label>
+        <label className="inline-check">
+          <input
+            type="checkbox"
+            checked={draft.wikiAutoCompile}
+            onChange={(e) => patch({ wikiAutoCompile: e.target.checked })}
+          />
+          {t(lang, "settings.autoCompile")}
+        </label>
+        {draft.wikiAutoCompile && (
+          <label>
+            {t(lang, "settings.autoCompileTime")}
+            <input
+              type="time"
+              value={minutesToTime(draft.wikiAutoCompileMinutes)}
+              onChange={(e) => patch({ wikiAutoCompileMinutes: timeToMinutes(e.target.value) })}
+            />
+          </label>
+        )}
+        <p className="muted">{t(lang, "settings.autoCompileHint")}</p>
       </section>
 
       <section className="settings-group">
@@ -345,4 +364,16 @@ export function SettingsPanel({ model, lang }: Props) {
       </section>
     </div>
   );
+}
+
+function minutesToTime(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+function timeToMinutes(value: string): number {
+  const [h, m] = value.split(":").map(Number);
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return 8 * 60;
+  return Math.min(1439, Math.max(0, h * 60 + m));
 }

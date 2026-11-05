@@ -6,12 +6,15 @@ import { FileWikiStore } from "./platform/wikiStore.ts";
 import { NoteStore } from "./core/notes/store.ts";
 import { SyncManager } from "./core/sync/manager.ts";
 import { WebDavClient } from "./core/sync/webdav.ts";
+import { WikiCompileService, WikiScheduler } from "./core/wiki/service.ts";
 
 export interface AppModel {
   noteStore: NoteStore;
   settingsStore: SettingsStore;
   wikiStore: FileWikiStore;
   sync: SyncManager;
+  wikiService: WikiCompileService;
+  wikiScheduler: WikiScheduler;
   persistence: JsonNotePersistence;
   subscribeRemoteApplied(fn: () => void): () => void;
 }
@@ -28,6 +31,15 @@ async function init(): Promise<AppModel> {
 
   const wikiStore = new FileWikiStore(storage);
   const remoteListeners = new Set<() => void>();
+  const wikiService = new WikiCompileService({
+    notes: () => noteStore.all(),
+    wikiStore,
+    settings: () => settingsStore.get(),
+    transport: httpTransport,
+  });
+  const wikiScheduler = new WikiScheduler(wikiService, settingsStore);
+  wikiScheduler.onError = (e) => console.error("scheduled wiki compile failed:", e.message);
+  wikiScheduler.start();
 
   const sync = new SyncManager({
     store: noteStore,
@@ -50,6 +62,8 @@ async function init(): Promise<AppModel> {
     settingsStore,
     wikiStore,
     sync,
+    wikiService,
+    wikiScheduler,
     persistence,
     subscribeRemoteApplied(fn) {
       remoteListeners.add(fn);

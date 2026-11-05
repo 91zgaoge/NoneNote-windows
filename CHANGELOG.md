@@ -1,5 +1,31 @@
 # Changelog
 
+## 1.5.0 (2026-11-05) — scheduled compile, expanded deck, real-HTTP sync test
+
+- **Daily scheduled compile**: settings toggle + time-of-day (default 08:00,
+  matching Android's default 480 minutes). One run per local day, guarded by
+  `wikiAutoCompileLastDay`; background runs use the fixed 60-page budget and
+  only happen while the app is open (no Windows background task scheduler).
+- **Shared compile service**: manual and scheduled runs now go through one
+  `WikiCompileService`, so they can never write the wiki concurrently; the
+  wiki tab observes background progress and can cancel it.
+- **Edge deck expansion**: the edge window snaps to the right screen edge and
+  expands leftwards on hover into a note-card panel (title + preview + colour).
+  Clicking a dash or card opens that note; the deck refreshes on every notes
+  save.
+- **Real-HTTP WebDAV test**: an in-process DAV server (PROPFIND/MKCOL/GET/PUT)
+  exercises two clients syncing a note, an edit and a deletion, plus payload
+  hash loop prevention — no mocks between `WebDavClient` and the network.
+- Not yet ported: attachments, chat/memory/agent actions, full fan gestures.
+
+### Verification
+
+- `npm test`: **46 tests, 0 failures**.
+- `npm run build`: **success** (`NoneNote-1.5.0-web`).
+- `cd src-tauri && cargo check`: **success** (`edge_place`, `edge_set_expanded`).
+- Edge deck collapsed/expanded states checked via Chrome DevTools screenshots.
+- **未验证**: Windows host, real WebDAV/LLM endpoints, multi-monitor placement.
+
 ## 1.4.0 (2026-11-05) — notes, WebDAV sync and the second-brain compiler
 
 Windows catches up with the Android 1.11.5 core. Before this release the app
