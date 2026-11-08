@@ -63,6 +63,7 @@ function normalize(s: AppSettings): AppSettings {
       ...p,
       temperature: Number.isFinite(p.temperature) ? p.temperature : 0.7,
       maxTokens: Number.isFinite(p.maxTokens) ? p.maxTokens : 2048,
+      vision: p.vision === true,
     })),
     activeProfileId: active,
     wikiExtractProfileId: profiles.some((p) => p.id === s.wikiExtractProfileId)
@@ -71,5 +72,9 @@ function normalize(s: AppSettings): AppSettings {
     wikiMaxPagesPerRun: Math.max(0, Math.floor(s.wikiMaxPagesPerRun || 0)),
     wikiAutoCompileMinutes: Math.min(1439, Math.max(0, Math.floor(s.wikiAutoCompileMinutes || 0))),
     noteDueOns: s.noteDueOns && typeof s.noteDueOns === "object" ? { ...s.noteDueOns } : {},
+    dueReminderLastDay: typeof s.dueReminderLastDay === "string" ? s.dueReminderLastDay : "",
+    aiHiddenNoteIds: Array.isArray(s.aiHiddenNoteIds)
+      ? s.aiHiddenNoteIds.filter((id) => typeof id === "string")
+      : [],
   };
 }

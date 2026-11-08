@@ -15,11 +15,23 @@ export interface LlmClient {
     user: string,
     maxOutputTokens?: number,
   ): Promise<[string, LlmUsage]>;
+  /**
+   * Multimodal completion over one image; returns the assistant content.
+   * Optional so text-only fakes stay valid; callers must treat an absent
+   * method as "this client does not support vision" (Android's LlmClient
+   * default throws for it).
+   */
+  describeImage?(prompt: string, image: { mime: string; dataUrl: string }): Promise<string>;
 }
+
+/** One content part of a multimodal chat message (OpenAI-compatible shape). */
+type ChatContentPart =
+  | { type: "image_url"; image_url: { url: string } }
+  | { type: "text"; text: string };
 
 interface ChatPayload {
   model: string;
-  messages: { role: string; content: string }[];
+  messages: { role: string; content: string | ChatContentPart[] }[];
   temperature?: number;
   max_tokens: number;
 }
@@ -85,6 +97,36 @@ export class AiClient implements LlmClient {
 
   chat(system: string, user: string, maxOutputTokens?: number): Promise<string> {
     return this.chatWithUsage(system, user, maxOutputTokens).then(([content]) => content);
+  }
+
+  async describeImage(prompt: string, image: { mime: string; dataUrl: string }): Promise<string> {
+    const payload: ChatPayload = {
+      model: this.model,
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "image_url", image_url: { url: image.dataUrl } },
+            { type: "text", text: prompt },
+          ],
+        },
+      ],
+      temperature: this.temperature,
+      max_tokens: this.maxTokens,
+    };
+    const timeoutMs = PromptMetrics.BASE_FIRST_BYTE_SECONDS * 1000;
+
+    let resp = await this.post(payload, timeoutMs);
+    // Some providers reject any temperature other than their fixed default.
+    if (resp.status === 400 && payload.temperature !== undefined &&
+        resp.body.toLowerCase().includes("temperature")) {
+      const { temperature: _drop, ...stripped } = payload;
+      resp = await this.post(stripped, timeoutMs);
+    }
+    if (resp.status < 200 || resp.status >= 300) {
+      throw statusError("chat/completions", resp.status, resp.body);
+    }
+    return parseContent(resp.body);
   }
 
   async chatWithUsage(

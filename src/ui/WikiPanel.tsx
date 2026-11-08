@@ -17,6 +17,7 @@ export function WikiPanel({ model, lang, revision }: Props) {
   const [trace, setTrace] = useState<Progress[]>([]);
   const [summary, setSummary] = useState<Summary | null>(model.wikiService.lastSummary);
   const [notice, setNotice] = useState<string | null>(null);
+  const [instruction, setInstruction] = useState("");
   const [stale, setStale] = useState(false);
   const selectedRef = useRef<string | null>(null);
   selectedRef.current = selected;
@@ -91,7 +92,7 @@ export function WikiPanel({ model, lang, revision }: Props) {
     setSummary(null);
     setTrace([]);
     try {
-      await model.wikiService.compile({ background: false });
+      await model.wikiService.compile({ background: false, userInstruction: instruction });
     } catch {
       // The service broadcasts the error; the subscription localizes it.
     }
@@ -152,6 +153,14 @@ export function WikiPanel({ model, lang, revision }: Props) {
         >
           {compiling ? t(lang, "wiki.cancel") : t(lang, "wiki.compile")}
         </button>
+      </div>
+      <div className="row">
+        <input
+          className="link-ingest"
+          placeholder={t(lang, "wiki.instruction.placeholder")}
+          value={instruction}
+          onChange={(e) => setInstruction(e.target.value)}
+        />
       </div>
 
       {!configured && <div className="banner">{t(lang, "wiki.notConfigured")}</div>}

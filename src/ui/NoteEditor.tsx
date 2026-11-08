@@ -14,6 +14,11 @@ interface Props {
   onRemoveAttachment: (a: LocalAttachment) => void;
   dueOn?: string;
   onDue: (date: string | null) => void;
+  /** AI privacy gate: true when the note is hidden from every AI input. */
+  hiddenFromAi?: boolean;
+  onHideFromAi: (id: string, hidden: boolean) => void;
+  /** Ingest a web link into this note as a link attachment. */
+  onIngestLink?: (url: string) => Promise<{ ok: boolean; detail?: string }>;
   onBody: (id: string, body: string) => void;
   onTitle: (id: string, title: string) => void;
   onPin: (id: string) => void;
@@ -64,6 +69,13 @@ export function NoteEditor(props: Props) {
           ↓
         </button>
         <span style={{ flex: 1 }} />
+        <button
+          type="button"
+          className={props.hiddenFromAi ? "chip active" : "chip"}
+          onClick={() => props.onHideFromAi(note.id, !props.hiddenFromAi)}
+        >
+          {props.hiddenFromAi ? t(lang, "editor.aiHidden") : t(lang, "editor.hideFromAi")}
+        </button>
         <button
           type="button"
           className="chip"

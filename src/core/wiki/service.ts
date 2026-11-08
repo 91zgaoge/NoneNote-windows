@@ -36,6 +36,8 @@ export interface WikiCompileDeps {
 
 export interface CompileOptions {
   background?: boolean;
+  /** Optional steering instruction, appended to the user-message tail (Android parity). */
+  userInstruction?: string;
   signal?: AbortSignal;
 }
 
@@ -126,6 +128,7 @@ export class WikiCompileService {
           ? BACKGROUND_MAX_PAGES_PER_RUN
           : settings.wikiMaxPagesPerRun,
       },
+      userInstruction: opts.userInstruction,
       signal: controller.signal,
       onProgress: (p) => {
         for (const fn of this.progressListeners) fn(p);

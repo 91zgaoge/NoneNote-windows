@@ -1,5 +1,58 @@
 # Changelog
 
+## 1.13.0 (2026-11-08) — full feature parity with Android 1.11.5 / macOS 2.0.1
+
+Ports the remaining Android/macOS feature set; every ported constant
+(8k summary input cap, 32k question cap, 8k web page cap, 50 MB/1M-char
+extraction limits, 1024/2048/2048 compile output budgets) matches the
+Android values exactly.
+
+- **Attachment text extraction** (`src/core/extract/`): magic-number sniff +
+  PDF (pdfjs) / docx / xlsx / pptx / HTML / txt→GFM, Android `extract/`
+  semantics and resource limits; zip-bomb budgeted.
+- **Attachment AI summaries + vision** (`src/core/attachment/analyzer.ts`):
+  background pass with a fixed 8,000-char input budget (`capInput` — never
+  keyed to `max_tokens`, the Android 1.11.x regression class), vision
+  descriptions of images and scanned PDFs (canvas raster ≤1568px), silent
+  failure + startup sweep. Vision per-profile toggle in Settings.
+- **Web reading** (`src/core/web/`): readability extraction, typed link
+  fetcher over the Rust HTTP proxy, URL ingest into link attachments
+  ("Ingest link" in the editor), and ask-time `groundLinks` (first URL,
+  8k cap, failure note passed through).
+- **`diagram` agent action** (`src/core/excalidraw.ts`): validated Excalidraw
+  elements → .excalidraw attachment (wire kind `diagram`, Android MIME) +
+  canvas block, node/edge projection into `extractedText` for the wiki, and
+  a deterministic read-only SVG preview. The `event` action is now also
+  listed in the chat system prompt (it was supported but unadvertised).
+- **Chat hardening** (`src/core/chat/service.ts`): the question is capped at
+  32,000 chars *before* assembly (same marker as Android/macOS
+  `capQuestion`), fixing the old head-slice that could truncate the question
+  under heavy context; hidden notes never reach retrieval or actions.
+- **AI privacy gate**: `aiHiddenNoteIds` — hide-from-AI toggle in the note
+  toolbar; hidden notes are filtered from compile, ask, dream and memory.
+- **Compile steering**: optional instruction field on the wiki panel, passed
+  as `userInstruction` to the stable-prompt tail.
+- **Daily due reminder**: `tauri-plugin-notification`, once per local day at
+  08:30 (Android `DueReminderWorker` semantics), notes due today.
+- **Sync-run ledger**: last 10 sync runs with status and attachment counts in
+  Settings; the manager gained an `onRunFinished` hook.
+- **Cross-platform ZIP backup** (`src/core/backupZip.ts`, fflate): same entry
+  layout as Android/macOS (`notes.json` + `attachments/<id>_<fileName>` +
+  `settings.json`/`wiki.json`/`chat.json`, sha256-verified payloads,
+  per-item failure isolation). Export is now `.zip`; the legacy single-JSON
+  backup still imports. Settings ride as one opaque string pref (each
+  platform keeps its own settings vocabulary).
+
+### Verification
+
+- `npm test`: **209/209 pass** (120 new across extract/analyzer/web/
+  excalidraw/backupZip/dueReminder + integration regressions for
+  capQuestion/groundLinks/diagram).
+- `npx tsc --noEmit` clean; `npm run build` succeeds; `cargo check` succeeds
+  (notification plugin wired in Rust + capability).
+- **未验证**: full app bundle on a Windows host (no Windows machine here);
+  vision calls against a real model; real WebDAV attachment round-trip.
+
 ## 1.12.0 (2026-11-05) — calendar-event action
 
 - **`event` action**: the `noty` protocol accepts

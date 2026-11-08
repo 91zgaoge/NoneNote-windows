@@ -151,6 +151,23 @@ const EN: Record<string, string> = {
   "common.confirm": "Continue",
   "common.close": "Close",
   "common.remove": "Remove",
+  "ai.vision": "Vision-capable model (describe images and scanned PDFs)",
+  "sync.runs": "Recent syncs",
+  "sync.runs.empty": "No syncs yet.",
+  "sync.runs.ok": "OK — {n} notes, attachments up {up} / down {down}",
+  "sync.runs.failed": "Failed: {detail}",
+  "sync.runs.skipped": "Skipped (not configured)",
+  "due.reminder.title": "Notes due today",
+  "due.reminder.body": "{count} due today: {titles}",
+  "editor.hideFromAi": "Hide from AI",
+  "editor.aiHidden": "Hidden from AI",
+  "editor.link.placeholder": "https:// — fetch a web page into this note",
+  "editor.link.ingest": "Ingest link",
+  "editor.link.failed": "Couldn't fetch that page: {detail}",
+  "chat.action.fail.bad_elements": "The diagram elements were invalid.",
+  "chat.action.done.diagram": "Created diagram note “{title}”",
+  "wiki.instruction.placeholder": "Optional: steer the compile, e.g. \"focus on travel planning\"",
+
 };
 
 const ZH: Record<string, string> = {
@@ -301,6 +318,23 @@ const ZH: Record<string, string> = {
   "common.confirm": "继续",
   "common.close": "关闭",
   "common.remove": "删除",
+  "ai.vision": "视觉模型（描述图片与扫描 PDF）",
+  "sync.runs": "最近同步",
+  "sync.runs.empty": "还没有同步记录。",
+  "sync.runs.ok": "成功 — {n} 条便签，附件上传 {up} / 下载 {down}",
+  "sync.runs.failed": "失败：{detail}",
+  "sync.runs.skipped": "已跳过（未配置）",
+  "due.reminder.title": "今天有到期的便签",
+  "due.reminder.body": "{count} 条今天到期：{titles}",
+  "editor.hideFromAi": "对 AI 隐藏",
+  "editor.aiHidden": "已对 AI 隐藏",
+  "editor.link.placeholder": "https:// — 抓取网页存入这条便签",
+  "editor.link.ingest": "摄取链接",
+  "editor.link.failed": "抓取失败：{detail}",
+  "chat.action.fail.bad_elements": "图表元素无效。",
+  "chat.action.done.diagram": "已创建图表便签「{title}」",
+  "wiki.instruction.placeholder": "可选：给编译下指令，如「重点写旅行规划」",
+
 };
 
 const TABLES: Record<Lang, Record<string, string>> = { en: EN, zh: ZH };

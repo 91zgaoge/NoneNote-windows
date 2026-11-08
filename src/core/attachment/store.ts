@@ -1,5 +1,5 @@
 import type { Attachment } from "../types.ts";
-import { PARSE_PENDING } from "../types.ts";
+import { MIME_EXCALIDRAW, PARSE_PENDING } from "../types.ts";
 import type { BlobStore } from "../../platform/blobStore.ts";
 import type { StorageAdapter } from "../../platform/storage.ts";
 import { uuid } from "../text.ts";
@@ -89,6 +89,43 @@ export class AttachmentStore {
     await this.persist();
   }
 
+  // ---- AnalyzerStore seam (used by core/attachment/analyzer.ts) ------------
+
+  private async mutate(id: string, f: (a: LocalAttachment) => LocalAttachment): Promise<void> {
+    const list = await this.ensure();
+    if (!list.some((a) => a.id === id)) return;
+    this.cache = list.map((a) => (a.id === id ? f(a) : a));
+    this.emit();
+    await this.persist();
+  }
+
+  async setExtractedText(id: string, text: string): Promise<void> {
+    await this.mutate(id, (a) => ({ ...a, extractedText: text }));
+  }
+
+  async setParseStatus(id: string, status: string): Promise<void> {
+    await this.mutate(id, (a) => ({ ...a, parseStatus: status }));
+  }
+
+  async setAiSummary(id: string, summary: string): Promise<void> {
+    await this.mutate(id, (a) => ({ ...a, aiSummary: summary }));
+  }
+
+  /**
+   * Rows the AI pass should sweep: missing a summary with something to work
+   * on — an extracted text layer, or an image/scanned PDF for vision. Mirrors
+   * the Android DAO query, extended with hasPayload rows so lazily-extracted
+   * documents are covered (Windows extracts lazily, Android at ingest).
+   */
+  async pendingSummary(): Promise<LocalAttachment[]> {
+    return (await this.ensure()).filter(
+      (a) =>
+        a.aiSummary.trim().length === 0 &&
+        a.hasPayload &&
+        (a.extractedText.trim().length > 0 || a.kind === "image" || a.mime === "application/pdf"),
+    );
+  }
+
   /**
    * Mirrors the merged sync metadata: upserts every remote row (keeping the
    * local payload flag) and drops rows no longer present anywhere.
@@ -123,7 +160,9 @@ export class AttachmentStore {
 }
 
 export function attachmentKind(mime: string): Attachment["kind"] {
-  return mime.startsWith("image/") ? "image" : "document";
+  if (mime.startsWith("image/")) return "image";
+  if (mime === MIME_EXCALIDRAW || mime.endsWith("excalidraw+json")) return "diagram";
+  return "document";
 }
 
 export function newAttachment(
@@ -143,7 +182,44 @@ export function newAttachment(
     sha256,
     extractedText: "",
     aiSummary: "",
-    parseStatus: mime.startsWith("image/") ? "ok" : PARSE_PENDING,
+    parseStatus: mime.startsWith("image/") || mime === MIME_EXCALIDRAW ? "ok" : PARSE_PENDING,
+  };
+}
+
+/** Web-link attachment row (Android link kind); text lands in extractedText. */
+export function newLinkAttachment(noteId: string, fileName: string): Attachment {
+  return {
+    id: uuid(),
+    noteId,
+    kind: "link",
+    mime: "text/html",
+    fileName,
+    size: 0,
+    sha256: "",
+    extractedText: "",
+    aiSummary: "",
+    parseStatus: PARSE_PENDING,
+  };
+}
+
+/** Excalidraw diagram row; payload is the .excalidraw JSON document. */
+export function newDiagramAttachment(
+  noteId: string,
+  fileName: string,
+  size: number,
+  sha256: string,
+): Attachment {
+  return {
+    id: uuid(),
+    noteId,
+    kind: "diagram",
+    mime: MIME_EXCALIDRAW,
+    fileName,
+    size,
+    sha256,
+    extractedText: "",
+    aiSummary: "",
+    parseStatus: "ok",
   };
 }
 

@@ -1,4 +1,4 @@
-import type { Note } from "../types.ts";
+import type { Note, NoteDocument } from "../types.ts";
 import { derivedTitle } from "../text.ts";
 import { projectDocument } from "../document.ts";
 import { uuid } from "../text.ts";
@@ -135,7 +135,7 @@ export class NoteStore {
     void this.safeUpsert(next);
   }
 
-  create(body = "", color?: number, title?: string): Note {
+  create(body = "", color?: number, title?: string, document?: NoteDocument | null): Note {
     const topOrder = (this.active().reduce((m, n) => Math.min(m, n.order), 1) ?? 1) - 1;
     const base: Note = {
       id: uuid(),
@@ -147,7 +147,7 @@ export class NoteStore {
       archived: false,
       pinned: false,
       order: topOrder,
-      document: null,
+      document: document ?? null,
     };
     const n = { ...base, title: title ?? derivedTitle(body) };
     this.notes = [...this.notes, n];

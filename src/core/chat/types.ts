@@ -5,7 +5,8 @@ export type AgentActionKind =
   | "archive"
   | "delete"
   | "due"
-  | "event";
+  | "event"
+  | "diagram";
 export type AgentActionStatus = "pending" | "done" | "failed" | "cancelled";
 export type AgentFailReason =
   | "not_found"
@@ -15,6 +16,7 @@ export type AgentFailReason =
   | "bad_color"
   | "bad_date"
   | "bad_time"
+  | "bad_elements"
   | "execution_failed";
 
 /** One ```noty action parsed from an assistant answer. */
@@ -27,6 +29,8 @@ export interface AgentAction {
   colorName?: string;
   dueOn?: string;
   time?: string;
+  /** Excalidraw elements for the `diagram` action (validated at execution). */
+  elements?: unknown[];
   status: AgentActionStatus;
   fail?: AgentFailReason;
   targetId?: string;

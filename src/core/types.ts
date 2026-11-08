@@ -45,7 +45,19 @@ export interface Note {
   document?: NoteDocument | null;
 }
 
-export type AttachmentKind = "document" | "image" | "audio" | "video" | "canvas";
+export type AttachmentKind =
+  | "document"
+  | "image"
+  | "audio"
+  | "video"
+  | "canvas"
+  /** Web-link ingest (Android wire kind). */
+  | "link"
+  /** Excalidraw diagram (Android 1.11.0 wire kind). */
+  | "diagram";
+
+/** Matches Android MIME_EXCALIDRAW. */
+export const MIME_EXCALIDRAW = "application/vnd.excalidraw+json";
 
 export interface Attachment {
   id: string;
@@ -102,6 +114,8 @@ export interface AiProfile {
   model: string;
   temperature: number;
   maxTokens: number;
+  /** Vision-capable model: describe images and scanned PDFs. */
+  vision: boolean;
 }
 
 export const SYNC_MODE_BOTH = "both";
@@ -130,6 +144,10 @@ export interface AppSettings {
   wikiAutoCompileLastDay: string;
   /** Local-only note due dates: note id -> yyyy-MM-dd. */
   noteDueOns: Record<string, string>;
+  /** Daily due-date reminder fired once per local day at 08:30 (Android parity). */
+  dueReminderLastDay: string;
+  /** Notes hidden from every AI input: compile, ask, dream, memory (Android 1.9.0). */
+  aiHiddenNoteIds: string[];
   language: "en" | "zh";
 }
 
@@ -146,6 +164,7 @@ export function emptySettings(): AppSettings {
     model: "",
     temperature: 0.7,
     maxTokens: 2048,
+    vision: false,
   };
   return {
     webdavUrl: "",
@@ -163,6 +182,8 @@ export function emptySettings(): AppSettings {
     wikiAutoCompileMinutes: 8 * 60,
     wikiAutoCompileLastDay: "",
     noteDueOns: {},
+    dueReminderLastDay: "",
+    aiHiddenNoteIds: [],
     language: "en",
   };
 }
@@ -180,4 +201,10 @@ export function extractProfile(s: AppSettings): AiProfile {
 
 export function noteDisplayTitle(n: Note): string {
   return n.title || "New note";
+}
+
+/** Notes visible to AI inputs (compile/ask/dream/memory): the privacy gate. */
+export function aiVisibleNotes(notes: Note[], settings: AppSettings): Note[] {
+  const hidden = new Set(settings.aiHiddenNoteIds ?? []);
+  return hidden.size === 0 ? notes : notes.filter((n) => !hidden.has(n.id));
 }

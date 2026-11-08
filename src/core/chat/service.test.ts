@@ -136,6 +136,10 @@ test("chat auto-runs create/append/color and gates archive/delete", async () => 
     remove() {
       calls.push("remove");
     },
+    createDiagram(title: string) {
+      calls.push(`diagram:${title}`);
+      return { id: "d1", title, body: "", color: 0, created: 0, modified: 0, archived: false, pinned: false, order: 0 };
+    },
   };
   const service = new ChatService({ ...deps(llm), actions: executor });
   const result = await service.send(emptySession, "create New and archive Coroutine notes");
@@ -183,6 +187,9 @@ test("calendar events wait for confirmation before creating the ICS", async () =
     },
     archive() {},
     remove() {},
+    createDiagram(title: string) {
+      return { id: "d1", title, body: "", color: 0, created: 0, modified: 0, archived: false, pinned: false, order: 0 };
+    },
   };
   const service = new ChatService({ ...deps(llm), actions: executor });
   const result = await service.send(emptySession, "add a dentist appointment");

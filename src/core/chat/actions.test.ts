@@ -101,7 +101,10 @@ test("executes create/append/color/due/archive/delete through the seam", () => {
   const notes = [note("n1", "Groceries", "milk")];
   const calls: string[] = [];
   const executor: NoteActionExecutor = {
-    create(body, title) {
+    createDiagram(title) {
+    return { id: "d1", title, body: "", color: 0, created: 0, modified: 0, archived: false, pinned: false, order: 0 };
+  },
+  create(body, title) {
       calls.push(`create:${title}:${body}`);
       return note("n9", title ?? "", body);
     },

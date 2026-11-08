@@ -36,6 +36,7 @@ export class SyncManager {
   private readonly sink: SyncStateSink;
   private readonly clientFactory: (cfg: AppSettings) => SyncTransport;
   private readonly onRemoteApplied: () => void;
+  private readonly onRunFinished: ((result: SyncResult, at: number) => void) | null;
   private readonly now: () => number;
   private readonly attachments: AttachmentStore | null;
   private readonly attachmentSync: AttachmentSync | null;
@@ -59,6 +60,8 @@ export class SyncManager {
     sink: SyncStateSink;
     clientFactory: (cfg: AppSettings) => SyncTransport;
     onRemoteApplied?: () => void;
+    /** Sync-run ledger hook (Android keeps the last 10 runs in Settings). */
+    onRunFinished?: (result: SyncResult, at: number) => void;
     now?: () => number;
     attachments?: AttachmentStore;
     attachmentSync?: AttachmentSync;
@@ -68,6 +71,7 @@ export class SyncManager {
     this.sink = opts.sink;
     this.clientFactory = opts.clientFactory;
     this.onRemoteApplied = opts.onRemoteApplied ?? (() => {});
+    this.onRunFinished = opts.onRunFinished ?? null;
     this.now = opts.now ?? (() => Date.now());
     this.attachments = opts.attachments ?? null;
     this.attachmentSync = opts.attachmentSync ?? null;
@@ -190,11 +194,13 @@ export class SyncManager {
         attachmentsFailed: stats.failed,
       };
       this.onStatus?.();
+      this.onRunFinished?.(this.lastSyncResult, now);
       return this.lastSyncResult;
     } catch (e) {
       const detail = e instanceof Error ? e.message : String(e);
       this.lastSyncResult = { kind: "failed", detail };
       this.onStatus?.();
+      this.onRunFinished?.(this.lastSyncResult, this.now());
       return this.lastSyncResult;
     }
   }

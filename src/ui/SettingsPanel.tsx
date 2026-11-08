@@ -1,10 +1,12 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { AppModel } from "../appModel.ts";
 import type { AppSettings } from "../core/types.ts";
 import { activeProfile } from "../core/types.ts";
 import { AiClient } from "../core/ai/client.ts";
 import { httpTransport } from "../platform/httpTransport.ts";
 import { decodeAttachmentPayload, makeBackup, parseBackup } from "../core/backup.ts";
+import { makeBackupZip, parseBackupZip, type BackupPrefEntry } from "../core/backupZip.ts";
+import type { SyncRunRow } from "../appModel.ts";
 import { uuid } from "../core/text.ts";
 import { t, type Lang } from "../i18n.ts";
 import { MemorySection } from "./MemorySection.tsx";
@@ -19,7 +21,12 @@ export function SettingsPanel({ model, lang }: Props) {
   const [saved, setSaved] = useState(false);
   const [testStatus, setTestStatus] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [runs, setRuns] = useState<SyncRunRow[]>([]);
   const importRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    void model.syncRuns().then(setRuns);
+  }, [model]);
 
   const profile = activeProfile(draft);
 
@@ -81,19 +88,24 @@ export function SettingsPanel({ model, lang }: Props) {
         bytes: meta.hasPayload ? await model.attachmentStore.payload(meta.id) : null,
       })),
     );
-    const backup = makeBackup(
-      model.noteStore.all(),
-      settings,
+    // Windows settings ride as one opaque string pref (Android-shape entry);
+    // Android/macOS keep their own settings vocabularies in the same slot.
+    const settingsEntries: BackupPrefEntry[] = [
+      { key: "nonenoteSettings", type: "string", value: JSON.stringify(settings) },
+    ];
+    const zip = makeBackupZip({
+      notes: model.noteStore.all(),
+      settings: settingsEntries,
       pages,
       state,
       chat,
       attachments,
-    );
-    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+    });
+    const blob = new Blob([zip as unknown as BlobPart], { type: "application/zip" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `NoneNote-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `NoneNote-${new Date().toISOString().slice(0, 10)}.zip`;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -102,30 +114,53 @@ export function SettingsPanel({ model, lang }: Props) {
     setNotice(null);
     if (!window.confirm(t(lang, "settings.import.confirm"))) return;
     try {
-      const backup = parseBackup(await file.text());
-      model.noteStore.replaceAll(backup.notes);
-      await model.settingsStore.update(backup.settings);
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      const parsed = parseBackupZip(bytes);
+      const backup =
+        parsed.format === "legacy-json"
+          ? parseBackup(await file.text())
+          : null;
+      if (backup) {
+        model.noteStore.replaceAll(backup.notes);
+        await model.settingsStore.update(backup.settings);
+      }
+      const notes = backup ? backup.notes : parsed.notes;
+      const pages = backup ? backup.pages : parsed.wiki?.pages ?? [];
+      const state = backup ? backup.state : parsed.wiki?.state ?? null;
+      const chat = backup ? backup.chat : parsed.chat ?? null;
+      const attachments = backup ? backup.attachments : parsed.attachments;
+      model.noteStore.replaceAll(notes);
+      if (!backup && parsed.settings.length > 0) {
+        const entry = parsed.settings.find((e) => e.key === "nonenoteSettings");
+        if (entry) {
+          try {
+            await model.settingsStore.update(JSON.parse(entry.value) as Partial<AppSettings>);
+          } catch {
+            /* settings entry is best-effort */
+          }
+        }
+      }
       const existing = await model.wikiStore.loadPages();
-      const names = new Set(backup.pages.map((p) => p.name));
+      const names = new Set(pages.map((p) => p.name));
       for (const p of existing) {
         if (!names.has(p.name)) await model.wikiStore.deletePage(p.name);
       }
-      for (const p of backup.pages) await model.wikiStore.savePage(p);
-      await model.wikiStore.saveState(backup.state);
-      await model.chatStore.save(backup.chat);
+      for (const p of pages) await model.wikiStore.savePage(p);
+      if (state) await model.wikiStore.saveState(state);
+      if (chat) await model.chatStore.save(chat);
       for (const existing of await model.attachmentStore.loadAll()) {
         await model.attachmentStore.remove(existing.id);
       }
-      for (const entry of backup.attachments) {
-        const bytes = decodeAttachmentPayload(entry);
+      for (const entry of attachments) {
+        const bytes = "bytes" in entry ? entry.bytes : decodeAttachmentPayload(entry);
         if (bytes) await model.attachmentStore.savePayload(entry.meta, bytes);
         else await model.attachmentStore.upsert(entry.meta, false);
       }
       setDraft(structuredClone(model.settingsStore.get()));
       setNotice(
         t(lang, "settings.import.done", {
-          notes: backup.notes.length,
-          pages: backup.pages.length,
+          notes: notes.length,
+          pages: pages.length,
         }),
       );
     } catch (e) {
@@ -249,6 +284,7 @@ export function SettingsPanel({ model, lang }: Props) {
                 model: "",
                 temperature: 0.7,
                 maxTokens: 2048,
+                vision: false,
               };
               patch({ profiles: [...draft.profiles, p], activeProfileId: id });
             }}
@@ -310,6 +346,14 @@ export function SettingsPanel({ model, lang }: Props) {
             />
           </label>
         </div>
+        <label className="check">
+          <input
+            type="checkbox"
+            checked={profile.vision === true}
+            onChange={(e) => patchProfile({ vision: e.target.checked })}
+          />
+          {t(lang, "ai.vision")}
+        </label>
         <div className="row">
           <label>
             {t(lang, "ai.extractModel")}
@@ -367,6 +411,29 @@ export function SettingsPanel({ model, lang }: Props) {
       <MemorySection model={model} lang={lang} />
 
       <section className="settings-group">
+        <h3>{t(lang, "sync.runs")}</h3>
+        {runs.length === 0 && <p className="muted">{t(lang, "sync.runs.empty")}</p>}
+        <ul className="sync-runs">
+          {runs.map((r, i) => (
+            <li key={i}>
+              <span className="muted">{new Date(r.at).toLocaleString()}</span>{" "}
+              <span className={r.result.kind === "failed" ? "sync-run-failed" : "sync-run-ok"}>
+                {r.result.kind === "ok"
+                  ? t(lang, "sync.runs.ok", {
+                      n: r.result.noteCount,
+                      up: r.result.attachmentsUploaded,
+                      down: r.result.attachmentsDownloaded,
+                    })
+                  : r.result.kind === "failed"
+                    ? t(lang, "sync.runs.failed", { detail: r.result.detail })
+                    : t(lang, "sync.runs.skipped")}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="settings-group">
         <h3>{t(lang, "settings.backup")}</h3>
         <p className="muted">{t(lang, "settings.backup.warning")}</p>
         <div className="row">
@@ -379,7 +446,7 @@ export function SettingsPanel({ model, lang }: Props) {
           <input
             ref={importRef}
             type="file"
-            accept="application/json,.json"
+            accept="application/zip,.zip,application/json,.json"
             style={{ display: "none" }}
             onChange={(e) => {
               const file = e.target.files?.[0];
